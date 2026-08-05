@@ -25,7 +25,7 @@ def get_vehicle_dossier(vehicle):
 		"Fleet Driver Assignment",
 		filters={"vehicle": vehicle},
 		fields=["name", "driver", "driver.driver_name as driver_name", "start_date", "end_date", "active"],
-		order_by="start_date desc, creation desc",
+		order_by="start_date desc, `tabFleet Driver Assignment`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
 
@@ -43,7 +43,7 @@ def get_vehicle_dossier(vehicle):
 			"route_purpose",
 			"fuel_used",
 		],
-		order_by="departure_datetime desc, creation desc",
+		order_by="departure_datetime desc, `tabFleet Trip Log`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
 
@@ -61,7 +61,7 @@ def get_vehicle_dossier(vehicle):
 			"fuel_station",
 			"odometer",
 		],
-		order_by="creation desc",
+		order_by="`tabFleet Fuel Log`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
 
@@ -97,7 +97,7 @@ def get_vehicle_dossier(vehicle):
 		"Fleet Fine",
 		filters={"vehicle": vehicle},
 		fields=["name", "driver", "driver.driver_name as driver_name", "date", "amount", "reason", "status"],
-		order_by="date desc, creation desc",
+		order_by="date desc, `tabFleet Fine`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
 
