@@ -1,0 +1,47 @@
+{
+ "cards": [
+  {
+   "card": "Veículos Activos"
+  },
+  {
+   "card": "Veículos em Manutenção"
+  },
+  {
+   "card": "Documentos a Expirar"
+  },
+  {
+   "card": "Manutenção Preventiva a Vencer"
+  },
+  {
+   "card": "Pedidos de Manutenção Abertos"
+  },
+  {
+   "card": "Custo de Combustível (Este Mês)"
+  },
+  {
+   "card": "Custo de Manutenção (Este Mês)"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Tendência de Custo de Combustível",
+   "width": "Full"
+  },
+  {
+   "chart": "Custo de Manutenção por Veículo",
+   "width": "Full"
+  }
+ ],
+ "creation": "2026-08-05 00:00:00.000000",
+ "dashboard_name": "Entre Fleet",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Entre Fleet",
+ "name": "Entre Fleet",
+ "owner": "Administrator"
+}

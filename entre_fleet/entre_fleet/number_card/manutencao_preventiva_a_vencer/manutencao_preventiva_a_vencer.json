@@ -1,0 +1,20 @@
+{
+ "creation": "2026-08-05 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Fleet Maintenance Schedule",
+ "filters_json": "[[\"Fleet Maintenance Schedule\",\"status\",\"in\",[\"A Vencer\",\"Vencido\"]]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Manutenção Preventiva a Vencer/Vencida",
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Entre Fleet",
+ "name": "Manutenção Preventiva a Vencer",
+ "owner": "Administrator",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Monthly",
+ "type": "Document Type"
+}

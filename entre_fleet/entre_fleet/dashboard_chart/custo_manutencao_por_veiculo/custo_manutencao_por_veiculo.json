@@ -1,0 +1,23 @@
+{
+ "aggregate_function_based_on": "total_cost",
+ "chart_name": "Custo de Manutenção por Veículo",
+ "chart_type": "Group By",
+ "creation": "2026-08-05 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "document_type": "Fleet Job Card",
+ "filters_json": "[[\"Fleet Job Card\",\"docstatus\",\"=\",1]]",
+ "group_by_based_on": "vehicle",
+ "group_by_type": "Sum",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "Entre Fleet",
+ "name": "Custo de Manutenção por Veículo",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "timeseries": 0,
+ "type": "Bar",
+ "use_report_chart": 0,
+ "y_axis": []
+}

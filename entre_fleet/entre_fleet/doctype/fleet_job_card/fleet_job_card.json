@@ -9,6 +9,7 @@
  "field_order": [
   "naming_series",
   "maintenance_request",
+  "vehicle",
   "status",
   "column_break_top",
   "workshop",
@@ -34,6 +35,16 @@
    "in_standard_filter": 1,
    "label": "Pedido de Manutenção",
    "options": "Fleet Maintenance Request"
+  },
+  {
+   "fetch_from": "maintenance_request.vehicle",
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Veículo",
+   "options": "Fleet Vehicle",
+   "read_only": 1
   },
   {
    "default": "Aberto",
