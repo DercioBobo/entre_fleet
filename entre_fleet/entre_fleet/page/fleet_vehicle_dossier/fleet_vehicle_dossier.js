@@ -184,6 +184,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		this.$container.append(this.render_back_link());
 		this.$container.append(this.render_hero(data.vehicle, data.documents, data.schedules[0] || null));
 		this.$container.append(this.render_kpis(data.summary));
+		this.$container.append(this.render_tyres_section(data.vehicle));
 		this.$container.append(this.render_assignments_section(data.assignments));
 		this.$container.append(this.render_trips_section(data.trips));
 		this.$container.append(this.render_fuel_section(data.fuel_logs));
@@ -270,6 +271,118 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			.join("");
 
 		return `<div class="dossier-kpis">${tileHtml}</div>`;
+	}
+
+	render_tyres_section(vehicle) {
+		const tyres = vehicle.tyres || [];
+		const batteries = vehicle.batteries || [];
+
+		if (!tyres.length && !batteries.length) {
+			const body = `<p class="dossier-empty">${this.text(
+				__("Sem pneus ou baterias configurados para este veículo.")
+			)}</p>`;
+			return this.render_section(__("Pneus e Baterias"), body, 0);
+		}
+
+		return this.render_section(
+			__("Pneus e Baterias"),
+			this.render_tyre_diagram(tyres, batteries),
+			tyres.length + batteries.length
+		);
+	}
+
+	render_tyre_diagram(tyres, batteries) {
+		const axles = [];
+		for (let i = 0; i < tyres.length; i += 2) {
+			axles.push([tyres[i], tyres[i + 1]]);
+		}
+
+		const axleSpacing = 64;
+		const topPad = 30;
+		const width = 200;
+		const height = topPad * 2 + Math.max(axles.length - 1, 0) * axleSpacing;
+
+		let svg = `<svg viewBox="0 0 ${width} ${height}" class="dossier-tyre-svg" role="img" aria-label="${this.text(
+			__("Esquema de pneus")
+		)}">`;
+		if (axles.length) {
+			svg += `<rect x="${width / 2 - 12}" y="${topPad}" width="24" height="${
+				height - topPad * 2
+			}" rx="6" class="dossier-tyre-chassis" />`;
+		}
+		axles.forEach((pair, i) => {
+			const y = topPad + i * axleSpacing;
+			svg += `<line x1="30" y1="${y}" x2="${width - 30}" y2="${y}" class="dossier-tyre-axle-bar" />`;
+			svg += this.render_tyre_rect(pair[0], 10, y - 18);
+			svg += this.render_tyre_rect(pair[1], width - 40, y - 18);
+			svg += `<text x="${width / 2}" y="${y + 4}" class="dossier-tyre-axle-label">${i + 1}</text>`;
+		});
+		svg += `</svg>`;
+
+		const batteryRow = batteries.length
+			? `<div class="dossier-battery-row">${batteries.map((b) => this.render_battery_chip(b)).join("")}</div>`
+			: "";
+
+		return `
+			<div class="dossier-tyre-diagram">
+				${tyres.length ? svg : ""}
+				${batteryRow}
+				${this.render_condition_legend()}
+			</div>
+		`;
+	}
+
+	render_tyre_rect(tyre, x, y) {
+		if (!tyre) return "";
+		const color = this.condition_color(tyre.condition);
+		return `
+			<rect x="${x}" y="${y}" width="30" height="36" rx="5" class="dossier-tyre-rect dossier-tyre-${color}">
+				<title>${this.text(tyre.position_label)}: ${this.text(tyre.condition || __("Sem registo"))}</title>
+			</rect>
+		`;
+	}
+
+	render_battery_chip(battery) {
+		const color = this.condition_color(battery.condition);
+		const title = `${this.text(battery.position_label)}: ${this.text(battery.condition || __("Sem registo"))}`;
+		return `
+			<div class="dossier-battery-chip dossier-tyre-${color}" title="${title}">
+				${this.text(battery.position_label)}
+			</div>
+		`;
+	}
+
+	render_condition_legend() {
+		const items = [
+			[__("Novo/Nova"), "green"],
+			[__("Recauchutado"), "teal"],
+			[__("Usado/Usada"), "gray"],
+			[__("A Substituir"), "red"],
+			[__("Sem registo"), "empty"],
+		];
+		const html = items
+			.map(
+				([label, color]) => `
+					<span class="dossier-legend-item">
+						<span class="dossier-legend-swatch dossier-tyre-${color}"></span>
+						${this.text(label)}
+					</span>
+				`
+			)
+			.join("");
+		return `<div class="dossier-legend">${html}</div>`;
+	}
+
+	condition_color(condition) {
+		const map = {
+			Novo: "green",
+			Nova: "green",
+			Recauchutado: "teal",
+			Usado: "gray",
+			Usada: "gray",
+			"A Substituir": "red",
+		};
+		return map[condition] || "empty";
 	}
 
 	render_assignments_section(assignments) {

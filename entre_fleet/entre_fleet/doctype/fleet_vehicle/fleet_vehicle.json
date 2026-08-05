@@ -25,6 +25,12 @@
   "inspection_expiry",
   "column_break_docs",
   "license_expiry",
+  "section_break_tyres",
+  "axle_count",
+  "column_break_tyres",
+  "battery_count",
+  "tyres",
+  "batteries",
   "section_break_other",
   "photo",
   "remarks"
@@ -134,6 +140,39 @@
    "fieldname": "license_expiry",
    "fieldtype": "Date",
    "label": "Validade da Licença"
+  },
+  {
+   "fieldname": "section_break_tyres",
+   "fieldtype": "Section Break",
+   "label": "Pneus e Baterias"
+  },
+  {
+   "default": "3",
+   "fieldname": "axle_count",
+   "fieldtype": "Int",
+   "label": "Número de Eixos"
+  },
+  {
+   "fieldname": "column_break_tyres",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "battery_count",
+   "fieldtype": "Int",
+   "label": "Número de Baterias"
+  },
+  {
+   "fieldname": "tyres",
+   "fieldtype": "Table",
+   "label": "Pneus",
+   "options": "Fleet Vehicle Tyre"
+  },
+  {
+   "fieldname": "batteries",
+   "fieldtype": "Table",
+   "label": "Baterias",
+   "options": "Fleet Vehicle Battery"
   },
   {
    "fieldname": "section_break_other",

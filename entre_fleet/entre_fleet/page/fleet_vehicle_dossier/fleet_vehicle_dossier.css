@@ -456,3 +456,120 @@ table.dossier-table a:hover {
 		align-items: flex-start;
 	}
 }
+
+/* Tyre / battery schematic */
+.dossier-tyre-diagram {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 24px;
+	padding: 6px 2px 4px;
+}
+
+.dossier-tyre-svg {
+	width: 140px;
+	flex: 0 0 auto;
+}
+
+.dossier-tyre-chassis {
+	fill: var(--efd-sand-50);
+	stroke: var(--efd-gray-200);
+	stroke-width: 1;
+}
+
+.dossier-tyre-axle-bar {
+	stroke: var(--efd-gray-200);
+	stroke-width: 3;
+}
+
+.dossier-tyre-axle-label {
+	fill: var(--efd-gray-600);
+	font-size: 9px;
+	font-weight: 700;
+	text-anchor: middle;
+}
+
+.dossier-tyre-rect {
+	stroke-width: 1;
+}
+
+.dossier-battery-row {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.dossier-battery-chip {
+	font-size: 11px;
+	font-weight: 600;
+	color: #fff;
+	padding: 5px 10px;
+	border-radius: 6px;
+	white-space: nowrap;
+}
+
+/* Base colour classes: `background` covers the legend swatch and battery
+   chip (plain HTML elements); the compound .dossier-tyre-rect selector
+   below overrides with SVG fill/stroke for the diagram's rects. */
+.dossier-tyre-green {
+	background: var(--efd-green-600);
+}
+.dossier-tyre-teal {
+	background: var(--efd-teal-500);
+}
+.dossier-tyre-gray {
+	background: var(--efd-gray-500);
+}
+.dossier-tyre-red {
+	background: var(--efd-red-500);
+}
+.dossier-tyre-empty {
+	background: #fff;
+	color: var(--efd-gray-600);
+	border: 1px dashed var(--efd-gray-200);
+}
+
+.dossier-tyre-rect.dossier-tyre-green {
+	fill: var(--efd-green-600);
+	stroke: var(--efd-green-600);
+}
+.dossier-tyre-rect.dossier-tyre-teal {
+	fill: var(--efd-teal-500);
+	stroke: var(--efd-teal-500);
+}
+.dossier-tyre-rect.dossier-tyre-gray {
+	fill: var(--efd-gray-500);
+	stroke: var(--efd-gray-500);
+}
+.dossier-tyre-rect.dossier-tyre-red {
+	fill: var(--efd-red-500);
+	stroke: var(--efd-red-500);
+}
+.dossier-tyre-rect.dossier-tyre-empty {
+	fill: #fff;
+	stroke: var(--efd-gray-200);
+	stroke-dasharray: 3 2;
+}
+
+.dossier-legend {
+	display: flex;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	gap: 4px 14px;
+	max-width: 220px;
+}
+
+.dossier-legend-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	color: var(--efd-gray-600);
+}
+
+.dossier-legend-swatch {
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	flex: 0 0 auto;
+}
