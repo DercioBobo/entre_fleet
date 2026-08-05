@@ -12,10 +12,13 @@ const STATUS_COLOR = {
 	Activo: "green",
 	Válido: "green",
 	Concluído: "green",
+	Agendado: "green",
 	"A Expirar": "amber",
 	"Em Manutenção": "amber",
 	"Em Andamento": "amber",
 	Aberto: "amber",
+	"A Vencer": "amber",
+	Vencido: "red",
 	Expirado: "red",
 	Inactivo: "gray",
 	Abatido: "red",
@@ -71,11 +74,16 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	render_vehicle_index() {
 		this.$container.html(`
 			<div class="dossier-index">
-				<input
-					type="text"
-					class="dossier-search-input"
-					placeholder="${this.text(__("Pesquisar por matrícula, marca, modelo ou condutor..."))}"
-				/>
+				<div class="dossier-index-toolbar">
+					<input
+						type="text"
+						class="dossier-search-input"
+						placeholder="${this.text(__("Pesquisar por matrícula, marca, modelo ou condutor..."))}"
+					/>
+					<a class="dossier-calendar-link" href="/app/fleet-maintenance-schedule/view/calendar">
+						${this.text(__("Calendário de Manutenções"))}
+					</a>
+				</div>
 				<div class="dossier-vehicle-grid">
 					<p class="dossier-empty">${this.text(__("A carregar veículos..."))}</p>
 				</div>
@@ -174,11 +182,12 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	render(data) {
 		this.$container.empty();
 		this.$container.append(this.render_back_link());
-		this.$container.append(this.render_hero(data.vehicle, data.documents));
+		this.$container.append(this.render_hero(data.vehicle, data.documents, data.schedules[0] || null));
 		this.$container.append(this.render_kpis(data.summary));
 		this.$container.append(this.render_assignments_section(data.assignments));
 		this.$container.append(this.render_trips_section(data.trips));
 		this.$container.append(this.render_fuel_section(data.fuel_logs));
+		this.$container.append(this.render_schedules_section(data.schedules));
 		this.$container.append(this.render_maintenance_section(data.maintenance_requests, data.job_cards));
 		this.$container.append(this.render_documents_section(data.documents));
 	}
@@ -198,11 +207,18 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 
 	// ---- sections -------------------------------------------------------
 
-	render_hero(vehicle, documents) {
+	render_hero(vehicle, documents, nextSchedule) {
 		const builtInChips = documents
 			.filter((d) => d.source === "vehicle")
 			.map((d) => this.chip(`${d.document_type}: ${this.date(d.expiry_date)}`, STATUS_COLOR[d.status] || "gray"))
 			.join("");
+
+		const nextMaintenance = nextSchedule
+			? `${this.text(nextSchedule.maintenance_type)} — ${this.date(nextSchedule.next_due_date)} ${this.badge(
+					nextSchedule.status,
+					STATUS_COLOR[nextSchedule.status] || "gray"
+			  )}`
+			: this.text(__("Sem manutenção preventiva agendada"));
 
 		return `
 			<div class="dossier-hero">
@@ -222,6 +238,9 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 					<div class="dossier-meta-line">
 						<strong>${__("Condutor Atribuído")}:</strong>
 						${vehicle.assigned_driver ? this.link("Fleet Driver", vehicle.assigned_driver) : "—"}
+					</div>
+					<div class="dossier-meta-line">
+						<strong>${__("Próxima Manutenção")}:</strong> ${nextMaintenance}
 					</div>
 					<div class="dossier-doc-chips">${builtInChips}</div>
 				</div>
@@ -313,10 +332,26 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		return this.render_section(__("Abastecimentos"), body, fuel_logs.length);
 	}
 
+	render_schedules_section(schedules) {
+		const body = this.render_table(
+			[
+				{ label: __("Tipo de Manutenção"), render: (r) => this.link("Fleet Maintenance Schedule", r.name, r.maintenance_type) },
+				{ label: __("Intervalo"), render: (r) => `${this.text(r.interval_days)} ${__("dias")}` },
+				{ label: __("Última Realização"), render: (r) => this.date(r.last_done_date) },
+				{ label: __("Próxima Data"), render: (r) => this.date(r.next_due_date) },
+				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
+			],
+			schedules,
+			__("Sem manutenção preventiva agendada para este veículo.")
+		);
+		return this.render_section(__("Manutenção Preventiva Agendada"), body, schedules.length);
+	}
+
 	render_maintenance_section(maintenance_requests, job_cards) {
 		const requestsTable = this.render_table(
 			[
 				{ label: __("Nº"), render: (r) => this.link("Fleet Maintenance Request", r.name) },
+				{ label: __("Tipo"), render: (r) => this.badge(r.tipo_manutencao || "—", r.tipo_manutencao === "Preventiva" ? "green" : "amber") },
 				{ label: __("Data Abertura"), render: (r) => this.date(r.opening_date) },
 				{ label: __("Prioridade"), render: (r) => this.badge(r.priority || "—", "gray") },
 				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },

@@ -106,7 +106,7 @@ def get_vehicle_dossier(vehicle):
 	maintenance_requests = frappe.get_all(
 		"Fleet Maintenance Request",
 		filters={"vehicle": vehicle},
-		fields=["name", "status", "priority", "reported_issue", "opening_date"],
+		fields=["name", "status", "priority", "tipo_manutencao", "reported_issue", "opening_date"],
 		order_by="opening_date desc, creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
@@ -142,6 +142,14 @@ def get_vehicle_dossier(vehicle):
 
 	documents = _merge_documents(vehicle_doc, tracked_documents)
 
+	schedules = frappe.get_all(
+		"Fleet Maintenance Schedule",
+		filters={"vehicle": vehicle},
+		fields=["name", "maintenance_type", "interval_days", "last_done_date", "next_due_date", "status"],
+		order_by="next_due_date asc",
+		limit_page_length=HISTORY_LIMIT,
+	)
+
 	return {
 		"vehicle": vehicle_doc.as_dict(),
 		"assignments": assignments,
@@ -150,7 +158,8 @@ def get_vehicle_dossier(vehicle):
 		"maintenance_requests": maintenance_requests,
 		"job_cards": job_cards,
 		"documents": documents,
-		"summary": _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents),
+		"schedules": schedules,
+		"summary": _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents, schedules),
 	}
 
 
@@ -186,7 +195,7 @@ def _merge_documents(vehicle_doc, tracked_documents):
 	return documents
 
 
-def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents):
+def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents, schedules):
 	total_km = 0
 	for trip in trips:
 		if trip.odometer_start and trip.odometer_end and trip.odometer_end > trip.odometer_start:
@@ -194,6 +203,7 @@ def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents)
 
 	open_maintenance = [m for m in maintenance_requests if m.status in ("Aberto", "Em Andamento")]
 	expiring_documents = [d for d in documents if d["status"] in ("A Expirar", "Expirado")]
+	overdue_schedules = [s for s in schedules if s.status == "Vencido"]
 
 	return {
 		"trip_count": len(trips),
@@ -203,4 +213,6 @@ def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents)
 		"total_maintenance_cost": sum(j.total_cost or 0 for j in job_cards),
 		"open_maintenance_count": len(open_maintenance),
 		"expiring_documents_count": len(expiring_documents),
+		"next_maintenance_date": schedules[0].next_due_date if schedules else None,
+		"overdue_maintenance_schedules_count": len(overdue_schedules),
 	}

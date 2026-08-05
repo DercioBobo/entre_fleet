@@ -23,11 +23,18 @@
 }
 
 /* Vehicle index (search + card grid) */
+.dossier-index-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 18px;
+}
+
 .dossier-search-input {
-	width: 100%;
+	flex: 1 1 320px;
 	max-width: 420px;
 	padding: 9px 14px;
-	margin-bottom: 18px;
 	font-size: 14px;
 	color: var(--efd-navy-900);
 	background: #fff;
@@ -39,6 +46,19 @@
 
 .dossier-search-input:focus {
 	border-color: var(--efd-teal-500);
+}
+
+.dossier-calendar-link {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--efd-teal-500);
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.dossier-calendar-link:hover {
+	text-decoration: underline;
+	color: var(--efd-teal-500);
 }
 
 .dossier-vehicle-grid {

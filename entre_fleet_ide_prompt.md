@@ -120,10 +120,11 @@ for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
 | `Fleet Driver Assignment` | `FleetDriverAssignment` | `naming_series:` | Link -> Fleet Vehicle, Link -> Fleet Driver, data inicio, data fim, ativo (checkbox) — history of who drove what, since one vehicle can rotate drivers over shifts |
 | `Fleet Trip Log` | `FleetTripLog` | `naming_series:` | Link -> Fleet Vehicle, Link -> Fleet Driver, odometro inicial/final, data/hora saida e chegada, rota/proposito, combustivel usado |
 | `Fleet Fuel Log` | `FleetFuelLog` | `naming_series:` | Link -> Fleet Vehicle, Link -> Fleet Driver, litros, preco/litro, custo total (calculado), posto, odometro |
-| `Fleet Maintenance Request` | `FleetMaintenanceRequest` | `naming_series:` | Link -> Fleet Vehicle, problema reportado, prioridade, estado, data abertura |
+| `Fleet Maintenance Request` | `FleetMaintenanceRequest` | `naming_series:` | Link -> Fleet Vehicle, tipo de manutencao (Preventiva/Corretiva), Link -> Fleet Maintenance Schedule (only shown when Preventiva), problema reportado, prioridade, estado, data abertura, data conclusao — completing a Preventiva request linked to a schedule pushes the schedule's next due date forward |
 | `Fleet Job Card` | `FleetJobCard` | `naming_series:` | Link -> Fleet Maintenance Request, oficina, pecas usadas (child table -> `Fleet Job Card Item`), custo mao de obra, custo total (calculado), estado, data conclusao |
 | `Fleet Job Card Item` | `FleetJobCardItem` | — (child table, `istable: 1`, no autoname) | Peca/item (Data), quantidade, custo unitario, custo total (calculado) — rows of `Fleet Job Card`'s "pecas usadas" |
 | `Fleet Document Tracker` | `FleetDocumentTracker` | `naming_series:` | Link -> Fleet Vehicle, tipo de documento, data de validade, estado (Valido/A Expirar/Expirado) — for documents **beyond** the 3 built into `Fleet Vehicle` (seguro/inspecao/licenca), e.g. IPAT, extintor, revisao — feeds a daily scheduled job that flags upcoming expiries |
+| `Fleet Maintenance Schedule` | `FleetMaintenanceSchedule` | `naming_series:` | Link -> Fleet Vehicle, tipo de manutencao (free text), intervalo (dias), ultima realizacao, proxima data agendada (calculado), estado (Agendado/A Vencer/Vencido) — one record per recurring maintenance item per vehicle; ships a native Frappe Calendar View (`fleet_maintenance_schedule_calendar.js`) keyed on proxima data agendada, plus a form button that creates a pre-filled Preventiva `Fleet Maintenance Request` when due |
 
 **Naming series — derived from the Portuguese doctype label, no `FRT`/`FROTA` prefix.** Pattern: `<CODE>-.YY.-.##` (2-digit year, running number zero-padded to 2 digits). The `#` count is only a minimum padding width, not a cap — Frappe's counter is a plain integer, so it continues unpadded past 99 (`...-98`, `...-99`, `...-100`, `...-101`) with no truncation or collision risk. Fine as-is for every doctype; widen to `.###` only if you want `RV-26-009` to keep reading as 3 digits once Trip Log/Fuel Log volume regularly passes 100/year — that's a cosmetic call, not a functional one.
 
@@ -135,6 +136,7 @@ for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
 | `Fleet Maintenance Request` | Pedido de Manutencao | `PM-.YY.-.##` |
 | `Fleet Job Card` | Ordem de Servico | `OS-.YY.-.##` |
 | `Fleet Document Tracker` | Controlo de Documentos | `CD-.YY.-.##` |
+| `Fleet Maintenance Schedule` | Plano de Manutencao Preventiva | `PP-.YY.-.##` |
 
 (`Fleet Vehicle` and `Fleet Driver` use `field:` autoname, not a naming series. `Fleet Job Card Item` is a child table, no naming.)
 
@@ -151,6 +153,10 @@ for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
 - `Fleet Job Card.before_submit()`: throws unless `status == "Concluído"` — a job card shouldn't be submittable (locked, finalized) while still open.
 
 The Vehicle Dossier page's queries for these 4 doctypes filter `docstatus != 2` (cancelled) but **not** `docstatus != 0` (draft) — existing/in-progress records stay visible with a "Doc." column showing Rascunho/Submetido/Cancelado, rather than disappearing until submitted.
+
+**`Fleet Maintenance Schedule`**: `validate()` computes `next_due_date = last_done_date + interval_days` and a `status` (Agendado/A Vencer/Vencido, same 30-day-window tiering as Document Tracker — both now share `entre_fleet/entre_fleet/utils.py::classify_expiry()` instead of duplicating the threshold logic); throws on a duplicate (vehicle, tipo de manutencao) pair. `Fleet Maintenance Request.on_update()`: when `estado == "Concluído"` and a `maintenance_schedule` is linked, pushes `completion_date` (or `opening_date`) onto that schedule's `last_done_date` and re-saves it, which re-runs the schedule's own `validate()` to roll `next_due_date` forward — no date math duplicated between the two doctypes.
+
+**Calendar View — verified against Frappe v14.19.1 source, not assumed.** A doctype gets a calendar by shipping `<doctype>/<doctype>_calendar.js` registering `frappe.views.calendar["<DocType>"] = { field_map: {...} }` (`frappe/desk/form/meta.py::add_code()` reads this file live from disk on every meta fetch — same no-build-step mechanism as `.js`/`.css`/Page controllers, confirmed earlier in this doc). Pointing `field_map.start` and `field_map.end` at the same field renders a single-day event via Frappe's generic `frappe.desk.calendar.get_events` — no custom server method needed. Route: `/app/fleet-maintenance-schedule/view/calendar`.
 
 ## Design/UI direction for the workspace and any custom dashboard pages
 - Clean, modern, card-based layout. Teal/navy color scheme, minimal gradients.

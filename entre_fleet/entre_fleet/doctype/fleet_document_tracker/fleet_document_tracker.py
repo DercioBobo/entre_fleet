@@ -1,17 +1,17 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_days, getdate, today
 
-WARN_WITHIN_DAYS = 30
+from entre_fleet.entre_fleet.utils import classify_expiry
+
+STATUS_LABEL = {
+	"ok": "Válido",
+	"warning": "A Expirar",
+	"overdue": "Expirado",
+}
 
 
 def get_status_for_expiry(expiry_date):
-	expiry_date = getdate(expiry_date)
-	if expiry_date < getdate(today()):
-		return "Expirado"
-	if expiry_date <= add_days(getdate(today()), WARN_WITHIN_DAYS):
-		return "A Expirar"
-	return "Válido"
+	return STATUS_LABEL[classify_expiry(expiry_date)]
 
 
 class FleetDocumentTracker(Document):
