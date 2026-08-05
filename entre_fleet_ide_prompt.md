@@ -142,10 +142,15 @@ for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
 - `Fleet Vehicle.validate()`: warn (msgprint, not blocking) when `insurance_expiry`, `inspection_expiry`, or `license_expiry` is expired or within 30 days.
 - `Fleet Driver.validate()`: warn when `license_expiry` is expired.
 - `Fleet Fuel Log`: auto-calculate `total_cost` from `litres * price_per_litre` in `validate()`.
-- `Fleet Trip Log`: validate `odometer_end > odometer_start`.
+- `Fleet Trip Log`: validate `odometer_end > odometer_start` in `validate()`.
 - `Fleet Job Card`: auto-calculate `custo_total` from `custo_mao_de_obra + sum(pecas_usadas.custo_total)` in `validate()`.
-- `Fleet Driver Assignment.validate()`/`on_update()`: when `ativo` is checked, unset `ativo` (and stamp `data_fim`) on any other assignment for the same `Fleet Vehicle`, then write that driver onto `Fleet Vehicle.condutor_atribuido`. This is the single source of truth for "current driver" — `condutor_atribuido` is never edited directly on `Fleet Vehicle`.
-- `Fleet Trip Log` / `Fleet Fuel Log`: validate the submitted odometer reading is not lower than `Fleet Vehicle.odometro_atual`, then update `Fleet Vehicle.odometro_atual` to the new reading on submit — keeps the vehicle's current odometer in sync across both logs instead of drifting.
+
+**Submittable doctypes — `Fleet Trip Log`, `Fleet Fuel Log`, `Fleet Driver Assignment`, `Fleet Job Card` (`is_submittable: 1`, System Manager gets submit/cancel/amend).** These 4 all push a side effect onto another document (vehicle odometer, or assigned driver) — running that from `validate()`/`on_update()` fires on every save, including edits to old records, which can corrupt the vehicle's state. Fixed by gating the side effect behind actual submission:
+- `Fleet Driver Assignment.on_submit()`: when `active` is checked, unset `active` (and stamp `end_date`) on any other **submitted** assignment for the same `Fleet Vehicle`, then write that driver onto `Fleet Vehicle.assigned_driver` — the single source of truth for "current driver," never edited directly. `on_cancel()`: if this record's driver is the one currently on the vehicle, hand off to another submitted+active assignment if one exists, else clear it.
+- `Fleet Trip Log` / `Fleet Fuel Log`: `before_submit()` validates the reading isn't below `Fleet Vehicle.current_odometer`; `on_submit()`/`on_cancel()` call a shared `recompute_current_odometer(vehicle)` (in `entre_fleet/entre_fleet/vehicle_utils.py`) that sets `current_odometer` to `MAX` across all currently-submitted Trip/Fuel readings for that vehicle — order-independent, correct regardless of submit/cancel/amend sequence.
+- `Fleet Job Card.before_submit()`: throws unless `status == "Concluído"` — a job card shouldn't be submittable (locked, finalized) while still open.
+
+The Vehicle Dossier page's queries for these 4 doctypes filter `docstatus != 2` (cancelled) but **not** `docstatus != 0` (draft) — existing/in-progress records stay visible with a "Doc." column showing Rascunho/Submetido/Cancelado, rather than disappearing until submitted.
 
 ## Design/UI direction for the workspace and any custom dashboard pages
 - Clean, modern, card-based layout. Teal/navy color scheme, minimal gradients.

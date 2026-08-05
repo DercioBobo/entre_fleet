@@ -263,6 +263,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 					label: __("Estado"),
 					render: (r) => (r.active ? this.badge(__("Activo"), "green") : this.badge(__("Inactivo"), "gray")),
 				},
+				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
 			],
 			assignments,
 			__("Sem histórico de condutores para este veículo.")
@@ -286,6 +287,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				},
 				{ label: __("Combustível Usado"), render: (r) => (r.fuel_used ? `${this.text(r.fuel_used)} L` : "—") },
 				{ label: __("Rota/Propósito"), render: (r) => this.text(r.route_purpose) },
+				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
 			],
 			trips,
 			__("Sem viagens registadas para este veículo.")
@@ -303,6 +305,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				{ label: __("Preço/Litro"), render: (r) => this.currency(r.price_per_litre) },
 				{ label: __("Custo Total"), render: (r) => this.currency(r.total_cost) },
 				{ label: __("Odómetro"), render: (r) => this.text(r.odometer) },
+				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
 			],
 			fuel_logs,
 			__("Sem abastecimentos registados para este veículo.")
@@ -332,6 +335,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				{ label: __("Custo Total"), render: (r) => this.currency(r.total_cost) },
 				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
 				{ label: __("Conclusão"), render: (r) => this.date(r.completion_date) },
+				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
 			],
 			job_cards,
 			__("Sem ordens de serviço para este veículo.")
@@ -402,6 +406,16 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 
 	badge(label, color) {
 		return `<span class="dossier-badge dossier-badge-${color}">${this.text(label)}</span>`;
+	}
+
+	docstatus_badge(docstatus) {
+		const map = {
+			0: [__("Rascunho"), "gray"],
+			1: [__("Submetido"), "green"],
+			2: [__("Cancelado"), "red"],
+		};
+		const [label, color] = map[docstatus] || map[0];
+		return this.badge(label, color);
 	}
 
 	chip(label, color) {

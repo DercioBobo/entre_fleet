@@ -51,15 +51,23 @@ def get_vehicle_dossier(vehicle):
 
 	assignments = frappe.get_all(
 		"Fleet Driver Assignment",
-		filters={"vehicle": vehicle},
-		fields=["name", "driver", "driver.driver_name as driver_name", "start_date", "end_date", "active"],
+		filters={"vehicle": vehicle, "docstatus": ["!=", 2]},
+		fields=[
+			"name",
+			"driver",
+			"driver.driver_name as driver_name",
+			"start_date",
+			"end_date",
+			"active",
+			"docstatus",
+		],
 		order_by="start_date desc, `tabFleet Driver Assignment`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
 
 	trips = frappe.get_all(
 		"Fleet Trip Log",
-		filters={"vehicle": vehicle},
+		filters={"vehicle": vehicle, "docstatus": ["!=", 2]},
 		fields=[
 			"name",
 			"driver",
@@ -70,6 +78,7 @@ def get_vehicle_dossier(vehicle):
 			"arrival_datetime",
 			"route_purpose",
 			"fuel_used",
+			"docstatus",
 		],
 		order_by="departure_datetime desc, `tabFleet Trip Log`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
@@ -77,7 +86,7 @@ def get_vehicle_dossier(vehicle):
 
 	fuel_logs = frappe.get_all(
 		"Fleet Fuel Log",
-		filters={"vehicle": vehicle},
+		filters={"vehicle": vehicle, "docstatus": ["!=", 2]},
 		fields=[
 			"name",
 			"creation",
@@ -88,6 +97,7 @@ def get_vehicle_dossier(vehicle):
 			"total_cost",
 			"fuel_station",
 			"odometer",
+			"docstatus",
 		],
 		order_by="`tabFleet Fuel Log`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
@@ -106,7 +116,7 @@ def get_vehicle_dossier(vehicle):
 	if mr_names:
 		job_cards = frappe.get_all(
 			"Fleet Job Card",
-			filters={"maintenance_request": ["in", mr_names]},
+			filters={"maintenance_request": ["in", mr_names], "docstatus": ["!=", 2]},
 			fields=[
 				"name",
 				"maintenance_request",
@@ -116,6 +126,7 @@ def get_vehicle_dossier(vehicle):
 				"status",
 				"completion_date",
 				"creation",
+				"docstatus",
 			],
 			order_by="creation desc",
 			limit_page_length=HISTORY_LIMIT,
