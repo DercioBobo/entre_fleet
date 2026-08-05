@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:license_number",
+ "creation": "2026-08-05 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "driver_name",
+  "status",
+  "column_break_top",
+  "phone",
+  "photo",
+  "section_break_license",
+  "license_number",
+  "license_category",
+  "column_break_license",
+  "license_expiry"
+ ],
+ "fields": [
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Nome",
+   "reqd": 1
+  },
+  {
+   "default": "Activo",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado",
+   "options": "Activo\nInactivo\nSuspenso"
+  },
+  {
+   "fieldname": "column_break_top",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Telefone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Foto"
+  },
+  {
+   "fieldname": "section_break_license",
+   "fieldtype": "Section Break",
+   "label": "Carta de Condução"
+  },
+  {
+   "fieldname": "license_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nº da Carta de Condução",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "license_category",
+   "fieldtype": "Select",
+   "label": "Categoria da Carta",
+   "options": "A\nB\nC\nD\nEB\nEC"
+  },
+  {
+   "fieldname": "column_break_license",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "license_expiry",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Validade da Carta"
+  }
+ ],
+ "image_field": "photo",
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Entre Fleet",
+ "name": "Fleet Driver",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
