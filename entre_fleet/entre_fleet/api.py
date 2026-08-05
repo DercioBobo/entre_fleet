@@ -121,14 +121,6 @@ def get_vehicle_dossier(vehicle):
 			limit_page_length=HISTORY_LIMIT,
 		)
 
-	fines = frappe.get_all(
-		"Fleet Fine",
-		filters={"vehicle": vehicle},
-		fields=["name", "driver", "driver.driver_name as driver_name", "date", "amount", "reason", "status"],
-		order_by="date desc, `tabFleet Fine`.creation desc",
-		limit_page_length=HISTORY_LIMIT,
-	)
-
 	tracked_documents = frappe.get_all(
 		"Fleet Document Tracker",
 		filters={"vehicle": vehicle},
@@ -146,9 +138,8 @@ def get_vehicle_dossier(vehicle):
 		"fuel_logs": fuel_logs,
 		"maintenance_requests": maintenance_requests,
 		"job_cards": job_cards,
-		"fines": fines,
 		"documents": documents,
-		"summary": _build_summary(trips, fuel_logs, maintenance_requests, job_cards, fines, documents),
+		"summary": _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents),
 	}
 
 
@@ -184,13 +175,12 @@ def _merge_documents(vehicle_doc, tracked_documents):
 	return documents
 
 
-def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, fines, documents):
+def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents):
 	total_km = 0
 	for trip in trips:
 		if trip.odometer_start and trip.odometer_end and trip.odometer_end > trip.odometer_start:
 			total_km += trip.odometer_end - trip.odometer_start
 
-	pending_fines = [f for f in fines if f.status == "Pendente"]
 	open_maintenance = [m for m in maintenance_requests if m.status in ("Aberto", "Em Andamento")]
 	expiring_documents = [d for d in documents if d["status"] in ("A Expirar", "Expirado")]
 
@@ -201,7 +191,5 @@ def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, fines, doc
 		"total_fuel_cost": sum(f.total_cost or 0 for f in fuel_logs),
 		"total_maintenance_cost": sum(j.total_cost or 0 for j in job_cards),
 		"open_maintenance_count": len(open_maintenance),
-		"pending_fines_count": len(pending_fines),
-		"pending_fines_total": sum(f.amount or 0 for f in pending_fines),
 		"expiring_documents_count": len(expiring_documents),
 	}

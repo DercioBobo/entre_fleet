@@ -11,12 +11,10 @@ frappe.pages["fleet-vehicle-dossier"].on_page_show = function (wrapper) {
 const STATUS_COLOR = {
 	Activo: "green",
 	Válido: "green",
-	Pago: "green",
 	Concluído: "green",
 	"A Expirar": "amber",
 	"Em Manutenção": "amber",
 	"Em Andamento": "amber",
-	Pendente: "amber",
 	Aberto: "amber",
 	Expirado: "red",
 	Inactivo: "gray",
@@ -183,7 +181,6 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		this.$container.append(this.render_fuel_section(data.fuel_logs));
 		this.$container.append(this.render_maintenance_section(data.maintenance_requests, data.job_cards));
 		this.$container.append(this.render_documents_section(data.documents));
-		this.$container.append(this.render_fines_section(data.fines));
 	}
 
 	render_back_link() {
@@ -238,11 +235,6 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			[__("Km Percorridos"), `${summary.total_km}`, null],
 			[__("Custo Combustível"), this.currency(summary.total_fuel_cost), `${summary.total_fuel_litres} L`],
 			[__("Custo Manutenção"), this.currency(summary.total_maintenance_cost), null],
-			[
-				__("Multas Pendentes"),
-				summary.pending_fines_count,
-				summary.pending_fines_count ? this.currency(summary.pending_fines_total) : null,
-			],
 			[__("Documentos a Expirar"), summary.expiring_documents_count, null],
 		];
 
@@ -365,21 +357,6 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			__("Sem documentos registados para este veículo.")
 		);
 		return this.render_section(__("Documentos"), body, documents.length);
-	}
-
-	render_fines_section(fines) {
-		const body = this.render_table(
-			[
-				{ label: __("Data"), render: (r) => this.date(r.date) },
-				{ label: __("Condutor"), render: (r) => this.link("Fleet Driver", r.driver, r.driver_name) },
-				{ label: __("Valor"), render: (r) => this.currency(r.amount) },
-				{ label: __("Motivo"), render: (r) => this.text(r.reason) },
-				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
-			],
-			fines,
-			__("Sem multas registadas para este veículo.")
-		);
-		return this.render_section(__("Multas"), body, fines.length);
 	}
 
 	// ---- generic building blocks -----------------------------------------

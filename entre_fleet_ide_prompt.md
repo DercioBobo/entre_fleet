@@ -124,7 +124,6 @@ for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
 | `Fleet Job Card` | `FleetJobCard` | `naming_series:` | Link -> Fleet Maintenance Request, oficina, pecas usadas (child table -> `Fleet Job Card Item`), custo mao de obra, custo total (calculado), estado, data conclusao |
 | `Fleet Job Card Item` | `FleetJobCardItem` | — (child table, `istable: 1`, no autoname) | Peca/item (Data), quantidade, custo unitario, custo total (calculado) — rows of `Fleet Job Card`'s "pecas usadas" |
 | `Fleet Document Tracker` | `FleetDocumentTracker` | `naming_series:` | Link -> Fleet Vehicle, tipo de documento, data de validade, estado (Valido/A Expirar/Expirado) — for documents **beyond** the 3 built into `Fleet Vehicle` (seguro/inspecao/licenca), e.g. IPAT, extintor, revisao — feeds a daily scheduled job that flags upcoming expiries |
-| `Fleet Fine` | `FleetFine` | `naming_series:` | Link -> Fleet Vehicle, Link -> Fleet Driver, data, valor, motivo, estado (pago/pendente) |
 
 **Naming series — derived from the Portuguese doctype label, no `FRT`/`FROTA` prefix.** Pattern: `<CODE>-.YY.-.##` (2-digit year, running number zero-padded to 2 digits). The `#` count is only a minimum padding width, not a cap — Frappe's counter is a plain integer, so it continues unpadded past 99 (`...-98`, `...-99`, `...-100`, `...-101`) with no truncation or collision risk. Fine as-is for every doctype; widen to `.###` only if you want `RV-26-009` to keep reading as 3 digits once Trip Log/Fuel Log volume regularly passes 100/year — that's a cosmetic call, not a functional one.
 
@@ -136,7 +135,6 @@ for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
 | `Fleet Maintenance Request` | Pedido de Manutencao | `PM-.YY.-.##` |
 | `Fleet Job Card` | Ordem de Servico | `OS-.YY.-.##` |
 | `Fleet Document Tracker` | Controlo de Documentos | `CD-.YY.-.##` |
-| `Fleet Fine` | Multa | `MU-.YY.-.##` |
 
 (`Fleet Vehicle` and `Fleet Driver` use `field:` autoname, not a naming series. `Fleet Job Card Item` is a child table, no naming.)
 
