@@ -1,0 +1,190 @@
+{
+ "charts": [],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Atalhos</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ficha do Veículo\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Calendário de Manutenções\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Veículos\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pedidos de Manutenção\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Módulos</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Veículos e Condutores\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Operação\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Manutenção\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Documentos\",\"col\":3}}]",
+ "creation": "2026-08-05 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "car",
+ "idx": 0,
+ "label": "Entre Fleet",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Veículos e Condutores",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Vehicle",
+   "link_count": 0,
+   "link_to": "Fleet Vehicle",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Driver",
+   "link_count": 0,
+   "link_to": "Fleet Driver",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Driver Assignment",
+   "link_count": 0,
+   "link_to": "Fleet Driver Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Operação",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Trip Log",
+   "link_count": 0,
+   "link_to": "Fleet Trip Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Fuel Log",
+   "link_count": 0,
+   "link_to": "Fleet Fuel Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Manutenção",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Maintenance Request",
+   "link_count": 0,
+   "link_to": "Fleet Maintenance Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Job Card",
+   "link_count": 0,
+   "link_to": "Fleet Job Card",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Maintenance Schedule",
+   "link_count": 0,
+   "link_to": "Fleet Maintenance Schedule",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Maintenance Type",
+   "link_count": 0,
+   "link_to": "Fleet Maintenance Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Documentos",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Document Tracker",
+   "link_count": 0,
+   "link_to": "Fleet Document Tracker",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Entre Fleet",
+ "name": "Entre Fleet",
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "label": "Ficha do Veículo",
+   "link_to": "fleet-vehicle-dossier",
+   "type": "Page"
+  },
+  {
+   "doc_view": "Calendar",
+   "label": "Calendário de Manutenções",
+   "link_to": "Fleet Maintenance Schedule",
+   "type": "DocType"
+  },
+  {
+   "label": "Veículos",
+   "link_to": "Fleet Vehicle",
+   "type": "DocType"
+  },
+  {
+   "label": "Pedidos de Manutenção",
+   "link_to": "Fleet Maintenance Request",
+   "type": "DocType"
+  }
+ ],
+ "title": "Entre Fleet"
+}

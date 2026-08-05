@@ -164,6 +164,6 @@ The Vehicle Dossier page's queries for these 4 doctypes filter `docstatus != 2` 
 ## Design/UI direction for the workspace and any custom dashboard pages
 - Clean, modern, card-based layout. Teal/navy color scheme, minimal gradients.
 - Prefer Tailwind utility classes for any custom HTML/portal pages; style panels are welcome for dashboard summary cards — but don't overuse it, keep it restrained.
-- Frappe Workspace with Number Cards (active vehicles, expiring documents this month, open maintenance requests, fuel cost this month) + charts (fuel cost trend, maintenance cost per vehicle).
+- **Workspace ("Entre Fleet", `entre_fleet/entre_fleet/workspace/entre_fleet/entre_fleet.json`)**: shortcuts (Ficha do Veículo page, Calendário de Manutenções, Veículos, Pedidos de Manutenção) + link cards to every doctype grouped into 4 cards (Veículos e Condutores / Operação / Manutenção / Documentos). Scoped to doctypes and pages only, deliberately — no Number Cards: verified against Frappe v14.19.1 source (`workspace.js`'s EditorJS `tools` registration) that the Workspace content-block editor in this version only supports `header`/`paragraph`/`chart`/`card`/`shortcut`/`quick_list`/`spacer` blocks, not `number_card`. Number Cards live on the separate, older `Dashboard` doctype (`/app/dashboard-view/<name>`) — worth a future pass if KPI tiles are wanted, out of scope for this one.
 
 Generate the full app now, doctype by doctype, running the verification commands after each one before moving to the next.
