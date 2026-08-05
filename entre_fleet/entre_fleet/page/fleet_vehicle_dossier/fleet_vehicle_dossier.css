@@ -22,11 +22,100 @@
 	box-sizing: border-box;
 }
 
-.dossier-placeholder {
-	padding: 60px 20px;
-	text-align: center;
-	color: var(--efd-gray-600);
+/* Vehicle index (search + card grid) */
+.dossier-search-input {
+	width: 100%;
+	max-width: 420px;
+	padding: 9px 14px;
+	margin-bottom: 18px;
 	font-size: 14px;
+	color: var(--efd-navy-900);
+	background: #fff;
+	border: 1px solid var(--efd-gray-200);
+	border-radius: 8px;
+	outline: none;
+	transition: border-color 0.15s ease;
+}
+
+.dossier-search-input:focus {
+	border-color: var(--efd-teal-500);
+}
+
+.dossier-vehicle-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 14px;
+}
+
+.dossier-vehicle-card {
+	position: relative;
+	display: block;
+	background: #fff;
+	border: 1px solid var(--efd-gray-200);
+	border-top: 3px solid var(--efd-teal-500);
+	border-radius: 10px;
+	padding: 16px 16px 14px;
+	text-decoration: none;
+	color: inherit;
+	transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.dossier-vehicle-card:hover,
+.dossier-vehicle-card:focus-visible {
+	box-shadow: 0 4px 14px rgba(11, 36, 54, 0.1);
+	transform: translateY(-1px);
+	text-decoration: none;
+	color: inherit;
+}
+
+.dossier-card-alert {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+}
+
+.dossier-card-alert-amber {
+	background: var(--efd-amber-500);
+}
+
+.dossier-card-alert-red {
+	background: var(--efd-red-500);
+}
+
+.dossier-card-plate {
+	display: inline-block;
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+	font-weight: 700;
+	font-size: 13px;
+	letter-spacing: 1.5px;
+	color: var(--efd-navy-900);
+	background: var(--efd-sand-50);
+	border: 1px solid var(--efd-gray-200);
+	border-radius: 4px;
+	padding: 3px 8px;
+	margin-bottom: 8px;
+}
+
+.dossier-card-title {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--efd-navy-900);
+	margin-bottom: 6px;
+}
+
+.dossier-card-meta {
+	font-size: 12px;
+	color: var(--efd-gray-600);
+	margin-top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dossier-vehicle-card {
+		transition: none;
+	}
 }
 
 /* Hero */

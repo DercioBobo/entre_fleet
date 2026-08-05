@@ -50,7 +50,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		});
 
 		this.$container = $('<div class="fleet-dossier">').appendTo(this.page.body);
-		this.render_placeholder();
+		this.render_vehicle_index();
 		this.load_from_route();
 	}
 
@@ -59,9 +59,10 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		if (vehicle && vehicle !== this.current_vehicle) {
 			this.vehicle_field.set_value(vehicle);
 			this.load_vehicle(vehicle);
-		} else if (!vehicle) {
+		} else if (!vehicle && this.current_vehicle !== null) {
 			this.current_vehicle = null;
-			this.render_placeholder();
+			this.vehicle_field.set_value("");
+			this.render_vehicle_index();
 		}
 	}
 
@@ -81,12 +82,109 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			});
 	}
 
-	render_placeholder() {
-		this.$container.html(
-			`<div class="dossier-placeholder">${this.text(
-				__("Seleccione um veículo acima para ver a ficha completa.")
-			)}</div>`
-		);
+	// ---- vehicle index (card grid + search) -------------------------------
+
+	render_vehicle_index() {
+		this.$container.html(`
+			<div class="dossier-index">
+				<input
+					type="text"
+					class="dossier-search-input"
+					placeholder="${this.text(__("Pesquisar por matrícula, marca, modelo ou condutor..."))}"
+				/>
+				<div class="dossier-vehicle-grid">
+					<p class="dossier-empty">${this.text(__("A carregar veículos..."))}</p>
+				</div>
+			</div>
+		`);
+
+		const $grid = this.$container.find(".dossier-vehicle-grid");
+		const $input = this.$container.find(".dossier-search-input");
+
+		$input.on("input", () => this.filter_and_render_grid($grid, $input.val()));
+
+		if (this.all_vehicles) {
+			this.filter_and_render_grid($grid, $input.val());
+			return;
+		}
+
+		frappe.call({ method: "entre_fleet.entre_fleet.api.list_vehicles" }).then((r) => {
+			this.all_vehicles = r.message || [];
+			this.filter_and_render_grid($grid, $input.val());
+		});
+	}
+
+	filter_and_render_grid($grid, term) {
+		const vehicles = this.all_vehicles || [];
+		term = (term || "").trim().toLowerCase();
+
+		const filtered = !term
+			? vehicles
+			: vehicles.filter((v) =>
+					[v.license_plate, v.brand, v.model, v.assigned_driver_name]
+						.filter(Boolean)
+						.some((field) => field.toLowerCase().includes(term))
+			  );
+
+		this.render_vehicle_grid($grid, filtered, vehicles.length === 0);
+	}
+
+	render_vehicle_grid($grid, vehicles, fleetIsEmpty) {
+		if (!vehicles.length) {
+			const message = fleetIsEmpty
+				? __("Nenhum veículo registado.")
+				: __("Sem veículos correspondentes à pesquisa.");
+			$grid.html(`<p class="dossier-empty">${this.text(message)}</p>`);
+			return;
+		}
+
+		$grid.html(vehicles.map((v) => this.render_vehicle_card(v)).join(""));
+		$grid.find(".dossier-vehicle-card").on("click", (e) => {
+			e.preventDefault();
+			frappe.set_route("fleet-vehicle-dossier", $(e.currentTarget).attr("data-vehicle"));
+		});
+	}
+
+	render_vehicle_card(vehicle) {
+		const alert = this.document_alert(vehicle);
+		const alertDot = alert ? `<span class="dossier-card-alert dossier-card-alert-${alert}"></span>` : "";
+		const title =
+			[vehicle.brand, vehicle.model, vehicle.year].filter(Boolean).join(" ") || __("Sem identificação");
+		const driverLabel = vehicle.assigned_driver
+			? this.text(vehicle.assigned_driver_name || vehicle.assigned_driver)
+			: __("Sem condutor");
+
+		return `
+			<a
+				class="dossier-vehicle-card"
+				href="/app/fleet-vehicle-dossier/${encodeURIComponent(vehicle.name)}"
+				data-vehicle="${this.text(vehicle.name)}"
+			>
+				${alertDot}
+				<div class="dossier-card-plate">${this.text(vehicle.license_plate || "—")}</div>
+				<div class="dossier-card-title">${this.text(title)}</div>
+				${this.badge(vehicle.status || __("Sem Estado"), STATUS_COLOR[vehicle.status] || "gray")}
+				<div class="dossier-card-meta">${this.text(vehicle.category || "—")} · ${this.text(vehicle.fuel_type || "—")}</div>
+				<div class="dossier-card-meta">${driverLabel}</div>
+			</a>
+		`;
+	}
+
+	document_alert(vehicle) {
+		const dates = [vehicle.insurance_expiry, vehicle.inspection_expiry, vehicle.license_expiry].filter(Boolean);
+		if (!dates.length) return null;
+
+		const today = frappe.datetime.get_today();
+		const in30 = new Date();
+		in30.setDate(in30.getDate() + 30);
+		const in30Str = in30.toISOString().slice(0, 10);
+
+		let worst = null;
+		dates.forEach((d) => {
+			if (d < today) worst = "red";
+			else if (d <= in30Str && worst !== "red") worst = "amber";
+		});
+		return worst;
 	}
 
 	render(data) {

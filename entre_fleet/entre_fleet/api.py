@@ -15,6 +15,34 @@ BUILT_IN_DOCUMENTS = (
 
 
 @frappe.whitelist()
+def list_vehicles():
+	if not frappe.has_permission("Fleet Vehicle", "read"):
+		frappe.throw(_("Não tem permissão para ver veículos."), frappe.PermissionError)
+
+	return frappe.get_all(
+		"Fleet Vehicle",
+		fields=[
+			"name",
+			"license_plate",
+			"brand",
+			"model",
+			"year",
+			"status",
+			"category",
+			"fuel_type",
+			"current_odometer",
+			"assigned_driver",
+			"assigned_driver.driver_name as assigned_driver_name",
+			"insurance_expiry",
+			"inspection_expiry",
+			"license_expiry",
+		],
+		order_by="license_plate asc",
+		limit_page_length=0,
+	)
+
+
+@frappe.whitelist()
 def get_vehicle_dossier(vehicle):
 	if not frappe.has_permission("Fleet Vehicle", "read", vehicle):
 		frappe.throw(_("Não tem permissão para ver este veículo."), frappe.PermissionError)
