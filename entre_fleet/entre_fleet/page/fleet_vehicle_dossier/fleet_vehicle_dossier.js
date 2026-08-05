@@ -432,7 +432,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	}
 
 	currency(value) {
-		return frappe.format(value || 0, { fieldtype: "Currency" });
+		return frappe.format(value || 0, { fieldtype: "Currency" }, { only_value: true });
 	}
 
 	date(value) {
