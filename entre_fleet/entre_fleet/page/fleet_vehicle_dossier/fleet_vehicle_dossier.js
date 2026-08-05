@@ -36,19 +36,6 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			single_column: true,
 		});
 
-		this.vehicle_field = this.page.add_field({
-			fieldname: "vehicle",
-			label: __("Veículo"),
-			fieldtype: "Link",
-			options: "Fleet Vehicle",
-			change: () => {
-				const vehicle = this.vehicle_field.get_value();
-				if (vehicle && vehicle !== this.current_vehicle) {
-					frappe.set_route("fleet-vehicle-dossier", vehicle);
-				}
-			},
-		});
-
 		this.$container = $('<div class="fleet-dossier">').appendTo(this.page.body);
 		this.render_vehicle_index();
 		this.load_from_route();
@@ -57,11 +44,10 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	load_from_route() {
 		const vehicle = frappe.get_route()[1];
 		if (vehicle && vehicle !== this.current_vehicle) {
-			this.vehicle_field.set_value(vehicle);
 			this.load_vehicle(vehicle);
 		} else if (!vehicle && this.current_vehicle !== null) {
 			this.current_vehicle = null;
-			this.vehicle_field.set_value("");
+			this.page.set_title(__("Ficha do Veículo"));
 			this.render_vehicle_index();
 		}
 	}
@@ -189,6 +175,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 
 	render(data) {
 		this.$container.empty();
+		this.$container.append(this.render_back_link());
 		this.$container.append(this.render_hero(data.vehicle, data.documents));
 		this.$container.append(this.render_kpis(data.summary));
 		this.$container.append(this.render_assignments_section(data.assignments));
@@ -197,6 +184,19 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		this.$container.append(this.render_maintenance_section(data.maintenance_requests, data.job_cards));
 		this.$container.append(this.render_documents_section(data.documents));
 		this.$container.append(this.render_fines_section(data.fines));
+	}
+
+	render_back_link() {
+		const $link = $(
+			`<a class="dossier-back-link" href="/app/fleet-vehicle-dossier">&larr; ${this.text(
+				__("Todos os Veículos")
+			)}</a>`
+		);
+		$link.on("click", (e) => {
+			e.preventDefault();
+			frappe.set_route("fleet-vehicle-dossier");
+		});
+		return $link;
 	}
 
 	// ---- sections -------------------------------------------------------

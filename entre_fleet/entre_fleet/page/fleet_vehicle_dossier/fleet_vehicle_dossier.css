@@ -118,6 +118,20 @@
 	}
 }
 
+.dossier-back-link {
+	display: inline-block;
+	margin-bottom: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--efd-teal-500);
+	text-decoration: none;
+}
+
+.dossier-back-link:hover {
+	text-decoration: underline;
+	color: var(--efd-teal-500);
+}
+
 /* Hero */
 .dossier-hero {
 	display: flex;
