@@ -1,0 +1,181 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:license_plate",
+ "creation": "2026-08-05 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "license_plate",
+  "status",
+  "column_break_details",
+  "assigned_driver",
+  "section_break_vehicle",
+  "brand",
+  "model",
+  "year",
+  "category",
+  "column_break_vehicle",
+  "fuel_type",
+  "current_odometer",
+  "chassis_number",
+  "engine_number",
+  "section_break_docs",
+  "insurance_expiry",
+  "inspection_expiry",
+  "column_break_docs",
+  "license_expiry",
+  "section_break_other",
+  "photo",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "license_plate",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Matrícula",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "Activo",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado",
+   "options": "Activo\nEm Manutenção\nInactivo\nAbatido"
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assigned_driver",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Condutor Atribuído",
+   "options": "Fleet Driver",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_vehicle",
+   "fieldtype": "Section Break",
+   "label": "Detalhes do Veículo"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "label": "Marca"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Modelo"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "label": "Ano"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Categoria",
+   "options": "Ligeiro\nPesado\nMoto\nReboque\nOutro"
+  },
+  {
+   "fieldname": "column_break_vehicle",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Select",
+   "label": "Tipo de Combustível",
+   "options": "Gasolina\nGasóleo\nEléctrico\nHíbrido\nGás"
+  },
+  {
+   "fieldname": "current_odometer",
+   "fieldtype": "Float",
+   "label": "Odómetro Actual (Km)"
+  },
+  {
+   "fieldname": "chassis_number",
+   "fieldtype": "Data",
+   "label": "Número de Chassi"
+  },
+  {
+   "fieldname": "engine_number",
+   "fieldtype": "Data",
+   "label": "Número de Motor"
+  },
+  {
+   "fieldname": "section_break_docs",
+   "fieldtype": "Section Break",
+   "label": "Validade de Documentos"
+  },
+  {
+   "fieldname": "insurance_expiry",
+   "fieldtype": "Date",
+   "label": "Validade do Seguro"
+  },
+  {
+   "fieldname": "inspection_expiry",
+   "fieldtype": "Date",
+   "label": "Validade da Inspecção"
+  },
+  {
+   "fieldname": "column_break_docs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "license_expiry",
+   "fieldtype": "Date",
+   "label": "Validade da Licença"
+  },
+  {
+   "fieldname": "section_break_other",
+   "fieldtype": "Section Break",
+   "label": "Outros"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Foto"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Observações"
+  }
+ ],
+ "image_field": "photo",
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Entre Fleet",
+ "name": "Fleet Vehicle",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

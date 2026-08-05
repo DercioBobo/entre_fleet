@@ -92,7 +92,7 @@ python -m py_compile $(find entre_fleet -name "*.py")
 # Class name matches DocType name field exactly
 python -c "
 import json, glob
-for f in glob.glob('entre_fleet/entre_fleet/entre_fleet/doctype/*/*.json'):
+for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
     d = json.load(open(f, encoding='utf-8'))
     if d.get('istable'): continue
     expected = d['name'].replace(' ', '').replace('-', '')
@@ -104,7 +104,7 @@ for f in glob.glob('entre_fleet/entre_fleet/entre_fleet/doctype/*/*.json'):
 # Every doctype belongs to the single "Entre Fleet" module
 python -c "
 import json, glob
-for f in glob.glob('entre_fleet/entre_fleet/entre_fleet/doctype/*/*.json'):
+for f in glob.glob('entre_fleet/entre_fleet/doctype/*/*.json'):
     d = json.load(open(f, encoding='utf-8'))
     if d.get('module') != 'Entre Fleet':
         print('WRONG MODULE:', f, '->', d.get('module'))
