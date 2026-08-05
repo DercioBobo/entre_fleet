@@ -30,6 +30,10 @@ entre_fleet/                         <- repo root
     __init__.py                      <- __version__ = "0.0.1"
     hooks.py
     modules.txt                      <- contains: Entre Fleet
+    patches.txt                      <- required even if empty: bench's is_frappe_app()
+                                         check globs for hooks.py + modules.txt + patches.txt;
+                                         missing it silently drops the app from sites/apps.txt
+                                         and crashes esbuild with a cryptic path.resolve(undefined)
     config/__init__.py
     public/js/, public/css/
     entre_fleet/                     <- Frappe module folder, TWO levels below root
