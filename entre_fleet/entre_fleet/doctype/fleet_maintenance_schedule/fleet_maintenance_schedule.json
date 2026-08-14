@@ -14,6 +14,11 @@
   "interval_days",
   "last_done_date",
   "next_due_date",
+  "section_break_km",
+  "interval_km",
+  "last_done_odometer",
+  "column_break_km",
+  "next_due_km",
   "event_title"
  ],
  "fields": [
@@ -58,20 +63,53 @@
    "fieldname": "interval_days",
    "fieldtype": "Int",
    "label": "Intervalo (dias)",
-   "reqd": 1
+   "mandatory_depends_on": "eval:!doc.interval_km"
   },
   {
    "default": "Today",
+   "depends_on": "eval:doc.interval_days",
    "fieldname": "last_done_date",
    "fieldtype": "Date",
-   "label": "Última Realização",
-   "reqd": 1
+   "label": "Última Realização (data)",
+   "mandatory_depends_on": "eval:doc.interval_days"
   },
   {
+   "depends_on": "eval:doc.interval_days",
    "fieldname": "next_due_date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Próxima Data Agendada",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_km",
+   "fieldtype": "Section Break",
+   "label": "Por Quilometragem"
+  },
+  {
+   "fieldname": "interval_km",
+   "fieldtype": "Int",
+   "label": "Intervalo (Km)",
+   "mandatory_depends_on": "eval:!doc.interval_days"
+  },
+  {
+   "depends_on": "eval:doc.interval_km",
+   "fieldname": "last_done_odometer",
+   "fieldtype": "Float",
+   "label": "Odómetro na Última Realização",
+   "mandatory_depends_on": "eval:doc.interval_km"
+  },
+  {
+   "fieldname": "column_break_km",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.interval_km",
+   "fieldname": "next_due_km",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Próximo Odómetro Agendado",
    "read_only": 1
   },
   {

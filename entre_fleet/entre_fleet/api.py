@@ -1,3 +1,5 @@
+import datetime
+
 import frappe
 from frappe import _
 
@@ -6,6 +8,9 @@ from entre_fleet.entre_fleet.doctype.fleet_document_tracker.fleet_document_track
 )
 
 HISTORY_LIMIT = 500
+
+SCHEDULE_STATUS_RANK = {"Vencido": 0, "A Vencer": 1, "Agendado": 2}
+FAR_FUTURE_DATE = datetime.date.max
 
 BUILT_IN_DOCUMENTS = (
 	("insurance_expiry", "Seguro"),
@@ -106,7 +111,15 @@ def get_vehicle_dossier(vehicle):
 	maintenance_requests = frappe.get_all(
 		"Fleet Maintenance Request",
 		filters={"vehicle": vehicle},
-		fields=["name", "status", "priority", "tipo_manutencao", "reported_issue", "opening_date"],
+		fields=[
+			"name",
+			"status",
+			"priority",
+			"tipo_manutencao",
+			"reported_issue",
+			"required_parts",
+			"opening_date",
+		],
 		order_by="opening_date desc, creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
@@ -145,8 +158,34 @@ def get_vehicle_dossier(vehicle):
 	schedules = frappe.get_all(
 		"Fleet Maintenance Schedule",
 		filters={"vehicle": vehicle},
-		fields=["name", "maintenance_type", "interval_days", "last_done_date", "next_due_date", "status"],
-		order_by="next_due_date asc",
+		fields=[
+			"name",
+			"maintenance_type",
+			"interval_days",
+			"last_done_date",
+			"next_due_date",
+			"interval_km",
+			"last_done_odometer",
+			"next_due_km",
+			"status",
+		],
+		limit_page_length=HISTORY_LIMIT,
+	)
+	schedules.sort(key=lambda s: (SCHEDULE_STATUS_RANK.get(s.status, 9), s.next_due_date or FAR_FUTURE_DATE))
+
+	inspections = frappe.get_all(
+		"Fleet Vehicle Inspection",
+		filters={"vehicle": vehicle, "docstatus": ["!=", 2]},
+		fields=[
+			"name",
+			"inspection_date",
+			"driver",
+			"driver.driver_name as driver_name",
+			"overall_status",
+			"non_conformities_count",
+			"docstatus",
+		],
+		order_by="inspection_date desc, creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
 
@@ -159,7 +198,10 @@ def get_vehicle_dossier(vehicle):
 		"job_cards": job_cards,
 		"documents": documents,
 		"schedules": schedules,
-		"summary": _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents, schedules),
+		"inspections": inspections,
+		"summary": _build_summary(
+			trips, fuel_logs, maintenance_requests, job_cards, documents, schedules, inspections
+		),
 	}
 
 
@@ -195,7 +237,7 @@ def _merge_documents(vehicle_doc, tracked_documents):
 	return documents
 
 
-def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents, schedules):
+def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents, schedules, inspections):
 	total_km = 0
 	for trip in trips:
 		if trip.odometer_start and trip.odometer_end and trip.odometer_end > trip.odometer_start:
@@ -204,6 +246,7 @@ def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents,
 	open_maintenance = [m for m in maintenance_requests if m.status in ("Aberto", "Em Andamento")]
 	expiring_documents = [d for d in documents if d["status"] in ("A Expirar", "Expirado")]
 	overdue_schedules = [s for s in schedules if s.status == "Vencido"]
+	non_conforming_inspections = [i for i in inspections if i.overall_status == "Não Conforme"]
 
 	return {
 		"trip_count": len(trips),
@@ -215,4 +258,6 @@ def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents,
 		"expiring_documents_count": len(expiring_documents),
 		"next_maintenance_date": schedules[0].next_due_date if schedules else None,
 		"overdue_maintenance_schedules_count": len(overdue_schedules),
+		"inspection_count": len(inspections),
+		"non_conforming_inspections_count": len(non_conforming_inspections),
 	}

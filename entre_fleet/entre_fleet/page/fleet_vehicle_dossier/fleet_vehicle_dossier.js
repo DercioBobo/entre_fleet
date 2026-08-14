@@ -24,6 +24,8 @@ const STATUS_COLOR = {
 	Abatido: "red",
 	Cancelado: "gray",
 	Suspenso: "red",
+	Conforme: "green",
+	"Não Conforme": "red",
 };
 
 entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
@@ -190,6 +192,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		this.$container.append(this.render_fuel_section(data.fuel_logs));
 		this.$container.append(this.render_schedules_section(data.schedules));
 		this.$container.append(this.render_maintenance_section(data.maintenance_requests, data.job_cards));
+		this.$container.append(this.render_inspections_section(data.inspections));
 		this.$container.append(this.render_documents_section(data.documents));
 	}
 
@@ -214,8 +217,12 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			.map((d) => this.chip(`${d.document_type}: ${this.date(d.expiry_date)}`, STATUS_COLOR[d.status] || "gray"))
 			.join("");
 
+		const nextDue =
+			[nextSchedule && nextSchedule.next_due_date ? this.date(nextSchedule.next_due_date) : null, nextSchedule && nextSchedule.next_due_km ? `${this.text(nextSchedule.next_due_km)} km` : null]
+				.filter(Boolean)
+				.join(" · ") || "—";
 		const nextMaintenance = nextSchedule
-			? `${this.text(nextSchedule.maintenance_type)} — ${this.date(nextSchedule.next_due_date)} ${this.badge(
+			? `${this.text(nextSchedule.maintenance_type)} — ${nextDue} ${this.badge(
 					nextSchedule.status,
 					STATUS_COLOR[nextSchedule.status] || "gray"
 			  )}`
@@ -256,6 +263,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			[__("Custo Combustível"), this.currency(summary.total_fuel_cost), `${summary.total_fuel_litres} L`],
 			[__("Custo Manutenção"), this.currency(summary.total_maintenance_cost), null],
 			[__("Documentos a Expirar"), summary.expiring_documents_count, null],
+			[__("Não Conformidades (Verificações)"), summary.non_conforming_inspections_count, null],
 		];
 
 		const tileHtml = tiles
@@ -449,15 +457,49 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		const body = this.render_table(
 			[
 				{ label: __("Tipo de Manutenção"), render: (r) => this.link("Fleet Maintenance Schedule", r.name, r.maintenance_type) },
-				{ label: __("Intervalo"), render: (r) => `${this.text(r.interval_days)} ${__("dias")}` },
-				{ label: __("Última Realização"), render: (r) => this.date(r.last_done_date) },
-				{ label: __("Próxima Data"), render: (r) => this.date(r.next_due_date) },
+				{
+					label: __("Intervalo"),
+					render: (r) =>
+						[r.interval_days ? `${this.text(r.interval_days)} ${__("dias")}` : null, r.interval_km ? `${this.text(r.interval_km)} Km` : null]
+							.filter(Boolean)
+							.join(" · ") || "—",
+				},
+				{
+					label: __("Última Realização"),
+					render: (r) =>
+						[r.last_done_date ? this.date(r.last_done_date) : null, r.last_done_odometer ? `${this.text(r.last_done_odometer)} km` : null]
+							.filter(Boolean)
+							.join(" · ") || "—",
+				},
+				{
+					label: __("Próxima Manutenção"),
+					render: (r) =>
+						[r.next_due_date ? this.date(r.next_due_date) : null, r.next_due_km ? `${this.text(r.next_due_km)} km` : null]
+							.filter(Boolean)
+							.join(" · ") || "—",
+				},
 				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
 			],
 			schedules,
 			__("Sem manutenção preventiva agendada para este veículo.")
 		);
 		return this.render_section(__("Manutenção Preventiva Agendada"), body, schedules.length);
+	}
+
+	render_inspections_section(inspections) {
+		const body = this.render_table(
+			[
+				{ label: __("Nº"), render: (r) => this.link("Fleet Vehicle Inspection", r.name) },
+				{ label: __("Data"), render: (r) => this.date(r.inspection_date) },
+				{ label: __("Condutor"), render: (r) => this.link("Fleet Driver", r.driver, r.driver_name) },
+				{ label: __("Não Conformidades"), render: (r) => this.text(r.non_conformities_count) },
+				{ label: __("Estado Geral"), render: (r) => this.badge(r.overall_status || "—", STATUS_COLOR[r.overall_status] || "gray") },
+				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
+			],
+			inspections,
+			__("Sem verificações de veículo registadas para este veículo.")
+		);
+		return this.render_section(__("Verificações do Veículo"), body, inspections.length);
 	}
 
 	render_maintenance_section(maintenance_requests, job_cards) {
@@ -469,6 +511,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				{ label: __("Prioridade"), render: (r) => this.badge(r.priority || "—", "gray") },
 				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
 				{ label: __("Problema Reportado"), render: (r) => this.text(r.reported_issue) },
+				{ label: __("Peças Necessárias"), render: (r) => this.text(r.required_parts) },
 			],
 			maintenance_requests,
 			__("Sem pedidos de manutenção para este veículo.")

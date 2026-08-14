@@ -29,7 +29,9 @@
   "axle_count",
   "column_break_tyres",
   "battery_count",
+  "section_break_tyres_tables",
   "tyres",
+  "column_break_tyres_table",
   "batteries",
   "section_break_other",
   "photo",
@@ -163,10 +165,18 @@
    "label": "Número de Baterias"
   },
   {
+   "fieldname": "section_break_tyres_tables",
+   "fieldtype": "Section Break"
+  },
+  {
    "fieldname": "tyres",
    "fieldtype": "Table",
    "label": "Pneus",
    "options": "Fleet Vehicle Tyre"
+  },
+  {
+   "fieldname": "column_break_tyres_table",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "batteries",

@@ -16,7 +16,8 @@
   "opening_date",
   "completion_date",
   "section_break_issue",
-  "reported_issue"
+  "reported_issue",
+  "required_parts"
  ],
  "fields": [
   {
@@ -91,6 +92,11 @@
    "fieldtype": "Small Text",
    "label": "Problema Reportado",
    "reqd": 1
+  },
+  {
+   "fieldname": "required_parts",
+   "fieldtype": "Small Text",
+   "label": "Peças Necessárias"
   }
  ],
  "index_web_pages_for_search": 1,
