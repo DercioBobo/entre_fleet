@@ -77,7 +77,8 @@ def get_trip_board():
 			"driver.driver_name as driver_name",
 			"departure_datetime",
 			"odometer_start",
-			"route_purpose",
+			"route",
+			"cargo",
 		],
 	)
 	open_trip_by_vehicle = {t.vehicle: t for t in open_trips}
@@ -97,7 +98,7 @@ def get_trip_board():
 
 
 @frappe.whitelist()
-def start_trip(vehicle, driver, odometer_start, departure_datetime=None, route_purpose=None):
+def start_trip(vehicle, driver, odometer_start, departure_datetime=None, route=None, cargo=None):
 	if not frappe.has_permission("Fleet Trip Log", "create"):
 		frappe.throw(_("Não tem permissão para registar viagens."), frappe.PermissionError)
 
@@ -106,13 +107,14 @@ def start_trip(vehicle, driver, odometer_start, departure_datetime=None, route_p
 	trip.driver = driver
 	trip.odometer_start = odometer_start
 	trip.departure_datetime = departure_datetime or frappe.utils.now_datetime()
-	trip.route_purpose = route_purpose
+	trip.route = route
+	trip.cargo = cargo
 	trip.insert()
 	return trip.name
 
 
 @frappe.whitelist()
-def end_trip(trip_log, arrival_datetime, odometer_end, fuel_used=None, route_purpose=None):
+def end_trip(trip_log, arrival_datetime, odometer_end, fuel_used=None, route=None, cargo=None):
 	if not frappe.has_permission("Fleet Trip Log", "submit"):
 		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
 
@@ -121,8 +123,10 @@ def end_trip(trip_log, arrival_datetime, odometer_end, fuel_used=None, route_pur
 	trip.odometer_end = odometer_end
 	if fuel_used:
 		trip.fuel_used = fuel_used
-	if route_purpose:
-		trip.route_purpose = route_purpose
+	if route:
+		trip.route = route
+	if cargo:
+		trip.cargo = cargo
 	trip.save()
 	trip.submit()
 	return trip.name
@@ -162,7 +166,8 @@ def get_vehicle_dossier(vehicle):
 			"odometer_end",
 			"departure_datetime",
 			"arrival_datetime",
-			"route_purpose",
+			"route",
+			"cargo",
 			"fuel_used",
 			"docstatus",
 		],

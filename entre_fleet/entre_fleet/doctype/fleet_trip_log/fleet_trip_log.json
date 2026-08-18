@@ -9,6 +9,7 @@
  "field_order": [
   "naming_series",
   "vehicle",
+  "vehicle_type",
   "driver",
   "column_break_top",
   "departure_datetime",
@@ -19,7 +20,8 @@
   "column_break_odometer",
   "fuel_used",
   "section_break_route",
-  "route_purpose"
+  "route",
+  "cargo"
  ],
  "fields": [
   {
@@ -36,6 +38,14 @@
    "label": "Veículo",
    "options": "Fleet Vehicle",
    "reqd": 1
+  },
+  {
+   "fetch_from": "vehicle.vehicle_type",
+   "fieldname": "vehicle_type",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Tipo de Viatura",
+   "read_only": 1
   },
   {
    "fieldname": "driver",
@@ -88,12 +98,19 @@
   {
    "fieldname": "section_break_route",
    "fieldtype": "Section Break",
+   "label": "Rota e Carga"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
    "label": "Rota"
   },
   {
-   "fieldname": "route_purpose",
-   "fieldtype": "Small Text",
-   "label": "Rota/Propósito"
+   "depends_on": "eval:doc.vehicle_type!='Administrativo'",
+   "fieldname": "cargo",
+   "fieldtype": "Data",
+   "label": "Carga",
+   "mandatory_depends_on": "eval:doc.vehicle_type!='Administrativo'"
   }
  ],
  "index_web_pages_for_search": 1,

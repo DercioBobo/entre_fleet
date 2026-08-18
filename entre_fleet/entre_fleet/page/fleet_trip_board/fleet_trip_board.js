@@ -219,7 +219,8 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					)}</div>
 					<div class="trip-card-detail"><strong>${__("Saída")}:</strong> ${this.datetime(trip.departure_datetime)}</div>
 					<div class="trip-card-detail"><strong>${__("Odómetro Inicial")}:</strong> ${this.text(trip.odometer_start)} km</div>
-					${trip.route_purpose ? `<div class="trip-card-detail"><strong>${__("Rota")}:</strong> ${this.text(trip.route_purpose)}</div>` : ""}
+					${trip.route ? `<div class="trip-card-detail"><strong>${__("Rota")}:</strong> ${this.text(trip.route)}</div>` : ""}
+					${trip.cargo ? `<div class="trip-card-detail"><strong>${__("Carga")}:</strong> ${this.text(trip.cargo)}</div>` : ""}
 					<div class="trip-card-elapsed" data-departure="${trip.departure_datetime}">—</div>
 				</div>
 				<button class="btn btn-sm btn-primary trip-card-btn" data-action="chegada" data-vehicle="${this.text(
@@ -268,39 +269,54 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 
 	// ---- dialogs -------------------------------------------------------
 
+	requires_cargo(vehicle) {
+		return !!vehicle.vehicle_type && vehicle.vehicle_type !== "Administrativo";
+	}
+
 	open_saida_dialog(vehicle) {
 		if (!vehicle) return;
 
+		const fields = [
+			{
+				fieldname: "driver",
+				fieldtype: "Link",
+				options: "Fleet Driver",
+				label: __("Condutor"),
+				reqd: 1,
+			},
+			{
+				fieldname: "departure_datetime",
+				fieldtype: "Datetime",
+				label: __("Data/Hora de Saída"),
+				reqd: 1,
+				default: frappe.datetime.now_datetime(),
+			},
+			{
+				fieldname: "odometer_start",
+				fieldtype: "Float",
+				label: __("Odómetro Inicial (km)"),
+				reqd: 1,
+				default: vehicle.current_odometer || 0,
+			},
+			{
+				fieldname: "route",
+				fieldtype: "Data",
+				label: __("Rota"),
+			},
+		];
+
+		if (this.requires_cargo(vehicle)) {
+			fields.push({
+				fieldname: "cargo",
+				fieldtype: "Data",
+				label: __("Carga"),
+				reqd: 1,
+			});
+		}
+
 		const dialog = new frappe.ui.Dialog({
 			title: `${__("Registar Saída")} — ${vehicle.license_plate}`,
-			fields: [
-				{
-					fieldname: "driver",
-					fieldtype: "Link",
-					options: "Fleet Driver",
-					label: __("Condutor"),
-					reqd: 1,
-				},
-				{
-					fieldname: "departure_datetime",
-					fieldtype: "Datetime",
-					label: __("Data/Hora de Saída"),
-					reqd: 1,
-					default: frappe.datetime.now_datetime(),
-				},
-				{
-					fieldname: "odometer_start",
-					fieldtype: "Float",
-					label: __("Odómetro Inicial (km)"),
-					reqd: 1,
-					default: vehicle.current_odometer || 0,
-				},
-				{
-					fieldname: "route_purpose",
-					fieldtype: "Small Text",
-					label: __("Rota/Propósito"),
-				},
-			],
+			fields,
 			primary_action_label: __("Confirmar Saída"),
 			primary_action: (values) => {
 				dialog.hide();
@@ -322,35 +338,47 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		if (!vehicle || !vehicle.open_trip) return;
 		const trip = vehicle.open_trip;
 
+		const fields = [
+			{
+				fieldname: "arrival_datetime",
+				fieldtype: "Datetime",
+				label: __("Data/Hora de Chegada"),
+				reqd: 1,
+				default: frappe.datetime.now_datetime(),
+			},
+			{
+				fieldname: "odometer_end",
+				fieldtype: "Float",
+				label: __("Odómetro Final (km)"),
+				reqd: 1,
+				description: __("Odómetro inicial: {0} km", [trip.odometer_start]),
+			},
+			{
+				fieldname: "fuel_used",
+				fieldtype: "Float",
+				label: __("Combustível Usado (L)"),
+			},
+			{
+				fieldname: "route",
+				fieldtype: "Data",
+				label: __("Rota"),
+				default: trip.route,
+			},
+		];
+
+		if (this.requires_cargo(vehicle)) {
+			fields.push({
+				fieldname: "cargo",
+				fieldtype: "Data",
+				label: __("Carga"),
+				reqd: 1,
+				default: trip.cargo,
+			});
+		}
+
 		const dialog = new frappe.ui.Dialog({
 			title: `${__("Registar Chegada")} — ${vehicle.license_plate}`,
-			fields: [
-				{
-					fieldname: "arrival_datetime",
-					fieldtype: "Datetime",
-					label: __("Data/Hora de Chegada"),
-					reqd: 1,
-					default: frappe.datetime.now_datetime(),
-				},
-				{
-					fieldname: "odometer_end",
-					fieldtype: "Float",
-					label: __("Odómetro Final (km)"),
-					reqd: 1,
-					description: __("Odómetro inicial: {0} km", [trip.odometer_start]),
-				},
-				{
-					fieldname: "fuel_used",
-					fieldtype: "Float",
-					label: __("Combustível Usado (L)"),
-				},
-				{
-					fieldname: "route_purpose",
-					fieldtype: "Small Text",
-					label: __("Rota/Propósito"),
-					default: trip.route_purpose,
-				},
-			],
+			fields,
 			primary_action_label: __("Confirmar Chegada"),
 			primary_action: (values) => {
 				if (values.odometer_end <= trip.odometer_start) {
