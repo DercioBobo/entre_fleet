@@ -173,11 +173,14 @@ def get_maintenance_plan():
 			"name",
 			"vehicle",
 			"vehicle.license_plate as license_plate",
+			"vehicle.brand as brand",
+			"vehicle.model as model",
 			"maintenance_type",
 			"status",
 			"interval_days",
 			"interval_km",
 			"last_done_date",
+			"last_done_odometer",
 			"next_due_date",
 			"next_due_km",
 		],
@@ -266,6 +269,33 @@ def create_maintenance_request(
 		doc.odometer_at_request = frappe.utils.flt(odometer_at_request)
 	if next_due_km:
 		doc.next_due_km = frappe.utils.flt(next_due_km)
+	doc.insert()
+	return doc.name
+
+
+@frappe.whitelist()
+def create_maintenance_schedule(
+	vehicle,
+	maintenance_type,
+	interval_days=None,
+	last_done_date=None,
+	interval_km=None,
+	last_done_odometer=None,
+):
+	if not frappe.has_permission("Fleet Maintenance Schedule", "create"):
+		frappe.throw(_("Não tem permissão para criar planos de manutenção."), frappe.PermissionError)
+
+	doc = frappe.new_doc("Fleet Maintenance Schedule")
+	doc.vehicle = vehicle
+	doc.maintenance_type = maintenance_type
+	if interval_days:
+		doc.interval_days = frappe.utils.cint(interval_days)
+	if last_done_date:
+		doc.last_done_date = last_done_date
+	if interval_km:
+		doc.interval_km = frappe.utils.cint(interval_km)
+	if last_done_odometer:
+		doc.last_done_odometer = frappe.utils.flt(last_done_odometer)
 	doc.insert()
 	return doc.name
 

@@ -24,6 +24,8 @@ const MP_SCHEDULE_STATUS_COLOR = {
 
 const MP_STATUS_COLUMNS = ["Aberto", "Em Andamento", "Parado", "Concluído", "Cancelado"];
 
+const MP_SCHEDULE_STATUS_COLUMNS = ["Agendado", "A Vencer", "Vencido"];
+
 const MP_WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 const MP_MONTHS = [
@@ -53,8 +55,10 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 
 		this.$container = $('<div class="mp-page">').appendTo(this.page.body);
 
-		this.view = "overview";
+		this.entity = "schedule";
+		this.view = "table";
 		this.filter_status = "all";
+		this.filter_schedule_status = "all";
 		this.search_term = "";
 
 		const today = new Date();
@@ -76,11 +80,10 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 	// ---- shell ---------------------------------------------------------
 
 	render() {
-		const isOverview = this.view === "overview";
 		this.$container.html(`
 			${this.render_toolbar()}
-			${isOverview ? "" : this.render_stats()}
-			${isOverview ? "" : this.render_filter_chips()}
+			${this.render_stats()}
+			${this.render_filter_chips()}
 			<div class="mp-content"></div>
 		`);
 
@@ -89,18 +92,33 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 			this.render_content();
 		});
 
+		this.$container.find("[data-entity]").on("click", (e) => {
+			this.switch_entity($(e.currentTarget).attr("data-entity"));
+		});
+
 		this.$container.find("[data-view]").on("click", (e) => {
 			this.switch_view($(e.currentTarget).attr("data-view"));
 		});
 
 		this.$container.find("[data-status-filter]").on("click", (e) => {
-			this.filter_status = $(e.currentTarget).attr("data-status-filter");
+			const key = $(e.currentTarget).attr("data-status-filter");
+			if (this.entity === "schedule") {
+				this.filter_schedule_status = key;
+			} else {
+				this.filter_status = key;
+			}
 			this.$container.find("[data-status-filter]").removeClass("active");
 			$(e.currentTarget).addClass("active");
 			this.render_content();
 		});
 
-		this.$container.find(".mp-new-btn").on("click", () => this.open_create_dialog());
+		this.$container.find(".mp-new-btn").on("click", () => {
+			if (this.entity === "schedule") {
+				this.open_create_schedule_dialog();
+			} else {
+				this.open_create_dialog();
+			}
+		});
 
 		this.render_content();
 	}
@@ -111,39 +129,40 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 				<input
 					type="text"
 					class="mp-search"
-					placeholder="${this.text(__("Pesquisar por matrícula, marca, responsável ou descrição..."))}"
+					placeholder="${this.text(__("Pesquisar por matrícula, marca ou tipo..."))}"
 					value="${this.text(this.search_term)}"
 				/>
 				<div class="mp-view-switch">
-					<button type="button" class="mp-view-btn ${this.view === "overview" ? "active" : ""}" data-view="overview">
-						${__("Visão Geral")}
+					<button type="button" class="mp-view-btn ${this.entity === "schedule" ? "active" : ""}" data-entity="schedule">
+						${__("Planos")}
 					</button>
+					<button type="button" class="mp-view-btn ${this.entity === "request" ? "active" : ""}" data-entity="request">
+						${__("Pedidos")}
+					</button>
+				</div>
+				<div class="mp-view-switch">
 					<button type="button" class="mp-view-btn ${this.view === "table" ? "active" : ""}" data-view="table">
 						${__("Tabela")}
-					</button>
-					<button type="button" class="mp-view-btn ${this.view === "calendar" ? "active" : ""}" data-view="calendar">
-						${__("Calendário")}
 					</button>
 					<button type="button" class="mp-view-btn ${this.view === "cards" ? "active" : ""}" data-view="cards">
 						${__("Cartões")}
 					</button>
+					<button type="button" class="mp-view-btn ${this.view === "calendar" ? "active" : ""}" data-view="calendar">
+						${__("Calendário")}
+					</button>
 				</div>
-				<button type="button" class="btn btn-sm btn-primary mp-new-btn">${__("+ Novo Registo")}</button>
+				<button type="button" class="btn btn-sm btn-primary mp-new-btn">
+					${this.entity === "schedule" ? __("+ Novo Plano") : __("+ Novo Pedido")}
+				</button>
 			</div>
 		`;
 	}
 
 	render_stats() {
-		const s = this.data.summary || {};
-		const counts = s.status_counts || {};
-		const tiles = [
-			[__("Total"), s.total || 0],
-			[__("Abertos"), counts["Aberto"] || 0],
-			[__("Em Andamento"), counts["Em Andamento"] || 0],
-			[__("Parados"), counts["Parado"] || 0],
-			[__("Concluídos"), counts["Concluído"] || 0],
-			[__("Planos Vencidos"), s.overdue_schedules || 0],
-		];
+		return this.entity === "schedule" ? this.render_schedule_stats() : this.render_request_stats();
+	}
+
+	render_stat_tiles(tiles) {
 		return `
 			<div class="mp-stats">
 				${tiles
@@ -160,20 +179,43 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 		`;
 	}
 
-	render_filter_chips() {
-		const requests = this.data.requests || [];
-		const counts = { all: requests.length };
-		MP_STATUS_COLUMNS.forEach((s) => (counts[s] = 0));
-		requests.forEach((r) => {
-			if (counts[r.status] !== undefined) counts[r.status]++;
-		});
+	render_request_stats() {
+		const s = this.data.summary || {};
+		const counts = s.status_counts || {};
+		return this.render_stat_tiles([
+			[__("Total"), s.total || 0],
+			[__("Abertos"), counts["Aberto"] || 0],
+			[__("Em Andamento"), counts["Em Andamento"] || 0],
+			[__("Parados"), counts["Parado"] || 0],
+			[__("Concluídos"), counts["Concluído"] || 0],
+		]);
+	}
 
-		const chips = [["all", __("Todos")], ...MP_STATUS_COLUMNS.map((s) => [s, s])]
+	render_schedule_stats() {
+		const schedules = this.data.schedules || [];
+		const counts = { Agendado: 0, "A Vencer": 0, Vencido: 0 };
+		schedules.forEach((s) => {
+			if (counts[s.status] !== undefined) counts[s.status]++;
+		});
+		return this.render_stat_tiles([
+			[__("Total"), schedules.length],
+			[__("Agendados"), counts["Agendado"]],
+			[__("A Vencer"), counts["A Vencer"]],
+			[__("Vencidos"), counts["Vencido"]],
+		]);
+	}
+
+	render_filter_chips() {
+		return this.entity === "schedule" ? this.render_schedule_filter_chips() : this.render_request_filter_chips();
+	}
+
+	render_filter_chip_group(columns, counts, activeKey, colorFn) {
+		const chips = [["all", __("Todos")], ...columns.map((s) => [s, s])]
 			.map(
 				([key, label]) => `
 					<button
 						type="button"
-						class="mp-filter-chip mp-filter-chip-${this.status_color(key)} ${key === this.filter_status ? "active" : ""}"
+						class="mp-filter-chip mp-filter-chip-${colorFn(key)} ${key === activeKey ? "active" : ""}"
 						data-status-filter="${key}"
 					>
 						${this.text(label)} <span class="mp-filter-count">${counts[key] || 0}</span>
@@ -185,17 +227,45 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 		return `<div class="mp-filter-chips">${chips}</div>`;
 	}
 
+	render_request_filter_chips() {
+		const requests = this.data.requests || [];
+		const counts = { all: requests.length };
+		MP_STATUS_COLUMNS.forEach((s) => (counts[s] = 0));
+		requests.forEach((r) => {
+			if (counts[r.status] !== undefined) counts[r.status]++;
+		});
+		return this.render_filter_chip_group(MP_STATUS_COLUMNS, counts, this.filter_status, (key) => this.status_color(key));
+	}
+
+	render_schedule_filter_chips() {
+		const schedules = this.data.schedules || [];
+		const counts = { all: schedules.length };
+		MP_SCHEDULE_STATUS_COLUMNS.forEach((s) => (counts[s] = 0));
+		schedules.forEach((s) => {
+			if (counts[s.status] !== undefined) counts[s.status]++;
+		});
+		return this.render_filter_chip_group(MP_SCHEDULE_STATUS_COLUMNS, counts, this.filter_schedule_status, (key) =>
+			this.schedule_status_color(key)
+		);
+	}
+
 	switch_view(view) {
 		this.view = view;
 		this.render();
 	}
 
+	switch_entity(entity) {
+		this.entity = entity;
+		this.render();
+	}
+
 	render_content() {
 		const $mount = this.$container.find(".mp-content");
-		if (this.view === "overview") return this.render_overview_view($mount);
-		if (this.view === "table") return this.render_table_view($mount);
 		if (this.view === "calendar") return this.render_calendar_view($mount);
-		return this.render_cards_view($mount);
+		if (this.entity === "schedule") {
+			return this.view === "cards" ? this.render_schedule_cards_view($mount) : this.render_schedule_table_view($mount);
+		}
+		return this.view === "cards" ? this.render_cards_view($mount) : this.render_table_view($mount);
 	}
 
 	// ---- data helpers ----------------------------------------------------
@@ -219,179 +289,36 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 		return MP_REQUEST_STATUS_COLOR[status] || "gray";
 	}
 
-	// ---- overview view ----------------------------------------------------
-
-	build_overview_buckets() {
-		const requests = this.data.requests || [];
+	filtered_schedules() {
 		const schedules = this.data.schedules || [];
+		const term = (this.search_term || "").trim().toLowerCase();
 
-		// Schedules that already have someone actively on them (Aberto/Em Andamento/Parado)
-		// so an overdue schedule isn't wrongly counted as an untouched gap.
-		const openRequestScheduleNames = new Set(
-			requests
-				.filter((r) => ["Aberto", "Em Andamento", "Parado"].includes(r.status) && r.maintenance_schedule)
-				.map((r) => r.maintenance_schedule)
-		);
+		return schedules.filter((s) => {
+			if (this.filter_schedule_status !== "all" && s.status !== this.filter_schedule_status) return false;
+			if (!term) return true;
 
-		const scheduled = schedules
-			.filter((s) => s.status === "Agendado" || s.status === "A Vencer")
-			.sort((a, b) => this.compare_values(a.next_due_date, b.next_due_date));
-
-		const done = requests
-			.filter((r) => r.status === "Concluído")
-			.sort((a, b) => this.compare_values(b.completion_date, a.completion_date))
-			.slice(0, 15);
-
-		const missing = schedules
-			.filter((s) => s.status === "Vencido" && !openRequestScheduleNames.has(s.name))
-			.sort((a, b) => this.compare_values(a.next_due_date, b.next_due_date));
-
-		const postponed = requests
-			.filter((r) => r.status === "Parado")
-			.sort((a, b) => this.compare_values(a.opening_date, b.opening_date));
-
-		return { scheduled, done, missing, postponed };
-	}
-
-	compare_values(a, b) {
-		if (!a && !b) return 0;
-		if (!a) return 1;
-		if (!b) return -1;
-		return a < b ? -1 : a > b ? 1 : 0;
-	}
-
-	render_overview_view($mount) {
-		const { scheduled, done, missing, postponed } = this.build_overview_buckets();
-
-		const tiles = [
-			[__("Planeados"), scheduled.length, "teal"],
-			[__("Concluídos"), done.length, "green"],
-			[__("Em Falta"), missing.length, "red"],
-			[__("Adiados"), postponed.length, "amber"],
-		];
-
-		const statsHtml = `
-			<div class="mp-stats">
-				${tiles
-					.map(
-						([label, value]) => `
-							<div class="mp-stat">
-								<div class="mp-stat-value">${this.text(value)}</div>
-								<div class="mp-stat-label">${this.text(label)}</div>
-							</div>
-						`
-					)
-					.join("")}
-			</div>
-		`;
-
-		$mount.html(`
-			<div class="mp-overview">
-				${statsHtml}
-				${this.render_overview_section({
-					title: __("Planeado"),
-					subtitle: __("Manutenções agendadas — o que está para vir."),
-					color: "teal",
-					empty: __("Sem manutenções planeadas."),
-					rows: scheduled.map((s) => this.render_schedule_row(s)),
-				})}
-				${this.render_overview_section({
-					title: __("Concluído"),
-					subtitle: __("O que já foi feito recentemente."),
-					color: "green",
-					empty: __("Ainda sem manutenções concluídas."),
-					rows: done.map((r) => this.render_request_row(r, { showCompletion: true })),
-				})}
-				${this.render_overview_section({
-					title: __("Em Falta"),
-					subtitle: __("Vencidas e sem qualquer pedido aberto — ninguém está a tratar disto ainda."),
-					color: "red",
-					empty: __("Nada em falta. Bom trabalho!"),
-					rows: missing.map((s) => this.render_schedule_row(s, { showCreate: true })),
-				})}
-				${this.render_overview_section({
-					title: __("Adiado"),
-					subtitle: __("Pedidos que chegaram a começar e depois pararam."),
-					color: "amber",
-					empty: __("Sem pedidos parados."),
-					rows: postponed.map((r) => this.render_request_row(r, { showDaysOpen: true })),
-				})}
-			</div>
-		`);
-
-		$mount.find(".mp-overview-row").on("click", (e) => {
-			const $el = $(e.currentTarget);
-			frappe.set_route("Form", $el.attr("data-open-doctype"), $el.attr("data-open-name"));
-		});
-
-		$mount.find(".mp-overview-quick-add").on("click", (e) => {
-			e.stopPropagation();
-			const scheduleName = $(e.currentTarget).attr("data-schedule");
-			const schedule = missing.find((s) => s.name === scheduleName);
-			if (schedule) this.open_create_dialog(this.build_schedule_prefill(schedule));
+			return [s.license_plate, s.vehicle, s.brand, s.model, s.maintenance_type]
+				.filter(Boolean)
+				.some((field) => String(field).toLowerCase().includes(term));
 		});
 	}
 
-	render_overview_section({ title, subtitle, color, empty, rows }) {
-		return `
-			<div class="mp-overview-section">
-				<div class="mp-overview-section-header">
-					<span class="mp-overview-section-dot mp-overview-section-dot-${color}"></span>
-					<div>
-						<div class="mp-overview-section-title">
-							${this.text(title)} <span class="mp-overview-section-count">${rows.length}</span>
-						</div>
-						<div class="mp-overview-section-subtitle">${this.text(subtitle)}</div>
-					</div>
-				</div>
-				<div class="mp-overview-section-body">
-					${rows.length ? rows.join("") : `<p class="mp-empty">${this.text(empty)}</p>`}
-				</div>
-			</div>
-		`;
+	schedule_status_color(status) {
+		if (status === "all") return "navy";
+		return MP_SCHEDULE_STATUS_COLOR[status] || "gray";
 	}
 
-	render_schedule_row(s, opts = {}) {
-		const due = s.next_due_date ? this.date(s.next_due_date) : s.next_due_km ? `${this.text(s.next_due_km)} km` : "—";
-		return `
-			<div class="mp-overview-row" data-open-name="${this.text(s.name)}" data-open-doctype="Fleet Maintenance Schedule">
-				<div class="mp-overview-row-main">
-					<span class="mp-overview-row-plate">${this.text(s.license_plate || s.vehicle || "—")}</span>
-					<span class="mp-overview-row-detail">${this.text(s.maintenance_type)}</span>
-				</div>
-				<div class="mp-overview-row-side">
-					<span class="mp-overview-row-due">${due}</span>
-					${
-						opts.showCreate
-							? `<button type="button" class="mp-overview-quick-add" data-schedule="${this.text(
-									s.name
-							  )}" title="${this.text(__("Abrir pedido de manutenção"))}">+</button>`
-							: ""
-					}
-				</div>
-			</div>
-		`;
-	}
-
-	render_request_row(r, opts = {}) {
-		let sideValue = "—";
-		if (opts.showCompletion) {
-			sideValue = this.date(r.completion_date);
-		} else if (opts.showDaysOpen && r.opening_date) {
-			const days = frappe.datetime.get_diff(frappe.datetime.get_today(), r.opening_date);
-			sideValue = `${days} ${__("dias")}`;
-		}
-		return `
-			<div class="mp-overview-row" data-open-name="${this.text(r.name)}" data-open-doctype="Fleet Maintenance Request">
-				<div class="mp-overview-row-main">
-					<span class="mp-overview-row-plate">${this.text(r.license_plate || r.vehicle || "—")}</span>
-					<span class="mp-overview-row-detail">${this.text(r.reported_issue || r.tipo_manutencao || "—")}</span>
-				</div>
-				<div class="mp-overview-row-side">
-					<span class="mp-overview-row-due">${sideValue}</span>
-				</div>
-			</div>
-		`;
+	// A plan matters most alongside whatever's already happening about it — this maps each
+	// Schedule to any Request currently open against it, so the Schedule views can show
+	// "already covered" vs. "nobody's on this yet" at a glance instead of a separate dashboard.
+	open_requests_by_schedule() {
+		const map = {};
+		(this.data.requests || []).forEach((r) => {
+			if (r.maintenance_schedule && ["Aberto", "Em Andamento", "Parado"].includes(r.status)) {
+				map[r.maintenance_schedule] = r;
+			}
+		});
+		return map;
 	}
 
 	build_schedule_prefill(schedule) {
@@ -402,6 +329,174 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 			next_due_km: schedule.next_due_km || null,
 			reported_issue: `${schedule.maintenance_type} — ${__("manutenção preventiva agendada")}`,
 		};
+	}
+
+	format_interval(s) {
+		return (
+			[s.interval_days ? `${s.interval_days} ${__("dias")}` : null, s.interval_km ? `${s.interval_km} km` : null]
+				.filter(Boolean)
+				.join(" / ") || "—"
+		);
+	}
+
+	format_last_done(s) {
+		return (
+			[s.last_done_date ? this.date(s.last_done_date) : null, s.last_done_odometer ? `${s.last_done_odometer} km` : null]
+				.filter(Boolean)
+				.join(" · ") || "—"
+		);
+	}
+
+	format_next_due(s) {
+		return (
+			[s.next_due_date ? this.date(s.next_due_date) : null, s.next_due_km ? `${s.next_due_km} km` : null]
+				.filter(Boolean)
+				.join(" · ") || "—"
+		);
+	}
+
+	render_schedule_request_cell(schedule, openRequest) {
+		if (openRequest) {
+			return `<a class="mp-schedule-request-link" data-open-doctype="Fleet Maintenance Request" data-open-name="${this.text(
+				openRequest.name
+			)}">${this.text(openRequest.name)}</a>`;
+		}
+		if (schedule.status === "Agendado") return "—";
+		return `<button type="button" class="mp-quick-add" data-schedule="${this.text(
+			schedule.name
+		)}" title="${this.text(__("Abrir pedido de manutenção"))}">+</button>`;
+	}
+
+	bind_schedule_row_actions($mount) {
+		$mount.find("[data-open-doctype][data-open-name]").on("click", (e) => {
+			e.stopPropagation();
+			const $el = $(e.currentTarget);
+			frappe.set_route("Form", $el.attr("data-open-doctype"), $el.attr("data-open-name"));
+		});
+
+		$mount.find(".mp-quick-add").on("click", (e) => {
+			e.stopPropagation();
+			const scheduleName = $(e.currentTarget).attr("data-schedule");
+			const schedule = (this.data.schedules || []).find((s) => s.name === scheduleName);
+			if (schedule) this.open_create_dialog(this.build_schedule_prefill(schedule));
+		});
+	}
+
+	// ---- schedule table view ------------------------------------------------
+
+	render_schedule_table_view($mount) {
+		const rows = this.filtered_schedules();
+
+		if (!rows.length) {
+			$mount.html(`<p class="mp-empty">${__("Sem planos de manutenção correspondentes.")}</p>`);
+			return;
+		}
+
+		const openMap = this.open_requests_by_schedule();
+
+		const thead = [
+			"Nº",
+			__("Veículo"),
+			__("Tipo de Manutenção"),
+			__("Intervalo"),
+			__("Última Realização"),
+			__("Próxima Manutenção"),
+			__("Estado"),
+			__("Pedido"),
+		]
+			.map((h) => `<th>${this.text(h)}</th>`)
+			.join("");
+
+		const tbody = rows
+			.map(
+				(s, i) => `
+					<tr class="mp-table-row" data-open-doctype="Fleet Maintenance Schedule" data-open-name="${this.text(s.name)}">
+						<td>${i + 1}</td>
+						<td>
+							<div class="mp-cell-vehicle">
+								<strong>${this.text(s.license_plate || s.vehicle || "—")}</strong>
+								<span>${this.text([s.brand, s.model].filter(Boolean).join(" ") || "—")}</span>
+							</div>
+						</td>
+						<td>${this.text(s.maintenance_type)}</td>
+						<td>${this.text(this.format_interval(s))}</td>
+						<td>${this.text(this.format_last_done(s))}</td>
+						<td>${this.text(this.format_next_due(s))}</td>
+						<td>${this.badge(s.status, this.schedule_status_color(s.status))}</td>
+						<td>${this.render_schedule_request_cell(s, openMap[s.name])}</td>
+					</tr>
+				`
+			)
+			.join("");
+
+		$mount.html(`
+			<div class="mp-table-wrap">
+				<table class="mp-table">
+					<thead><tr>${thead}</tr></thead>
+					<tbody>${tbody}</tbody>
+				</table>
+			</div>
+		`);
+
+		this.bind_schedule_row_actions($mount);
+	}
+
+	// ---- schedule cards view ------------------------------------------------
+
+	render_schedule_cards_view($mount) {
+		const rows = this.filtered_schedules();
+		const openMap = this.open_requests_by_schedule();
+		const byStatus = {};
+		MP_SCHEDULE_STATUS_COLUMNS.forEach((s) => (byStatus[s] = []));
+		rows.forEach((s) => {
+			if (!byStatus[s.status]) byStatus[s.status] = [];
+			byStatus[s.status].push(s);
+		});
+
+		const columns = MP_SCHEDULE_STATUS_COLUMNS.map((status) => {
+			const items = byStatus[status] || [];
+			return `
+				<div class="mp-board-col">
+					<div class="mp-board-col-header mp-board-col-header-${this.schedule_status_color(status)}">
+						<span>${this.text(status)}</span>
+						<span class="mp-board-col-count">${items.length}</span>
+					</div>
+					<div class="mp-board-col-body">
+						${
+							items.length
+								? items.map((s) => this.render_schedule_card(s, openMap[s.name])).join("")
+								: `<p class="mp-board-empty">${__("Sem planos.")}</p>`
+						}
+					</div>
+				</div>
+			`;
+		}).join("");
+
+		$mount.html(`<div class="mp-board">${columns}</div>`);
+
+		this.bind_schedule_row_actions($mount);
+	}
+
+	render_schedule_card(s, openRequest) {
+		return `
+			<div
+				class="mp-card mp-card-${this.schedule_status_color(s.status)}"
+				data-open-doctype="Fleet Maintenance Schedule"
+				data-open-name="${this.text(s.name)}"
+			>
+				<div class="mp-card-top">
+					<span class="mp-card-plate">${this.text(s.license_plate || s.vehicle || "—")}</span>
+					${this.badge(s.status, this.schedule_status_color(s.status))}
+				</div>
+				<div class="mp-card-vehicle">${this.text([s.brand, s.model].filter(Boolean).join(" ") || "—")}</div>
+				<div class="mp-card-desc">${this.text(s.maintenance_type)}</div>
+				<div class="mp-card-meta">
+					<span>&#8635; ${this.text(this.format_interval(s))}</span>
+					<span>&#128197; ${this.text(this.format_next_due(s))}</span>
+				</div>
+				<div class="mp-card-meta">${this.render_schedule_request_cell(s, openRequest)}</div>
+			</div>
+		`;
 	}
 
 	// ---- table view --------------------------------------------------------
@@ -613,12 +708,7 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 					${weekdayHeader}
 					${cells}
 				</div>
-				<div class="mp-cal-legend">
-					<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-amber"></span>${__("Registo — Aberto/Em Andamento")}</span>
-					<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-red"></span>${__("Registo — Parado")}</span>
-					<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-green"></span>${__("Registo — Concluído")}</span>
-					<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-teal"></span>${__("Plano — Próxima Manutenção Agendada")}</span>
-				</div>
+				${this.render_calendar_legend()}
 				<div class="mp-cal-panel">${this.render_calendar_panel(events)}</div>
 			</div>
 		`);
@@ -656,6 +746,25 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 		});
 	}
 
+	render_calendar_legend() {
+		if (this.entity === "schedule") {
+			return `
+				<div class="mp-cal-legend">
+					<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-green"></span>${__("Agendado")}</span>
+					<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-amber"></span>${__("A Vencer")}</span>
+					<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-red"></span>${__("Vencido")}</span>
+				</div>
+			`;
+		}
+		return `
+			<div class="mp-cal-legend">
+				<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-amber"></span>${__("Aberto / Em Andamento")}</span>
+				<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-red"></span>${__("Parado")}</span>
+				<span class="mp-cal-legend-item"><span class="mp-cal-dot mp-cal-dot-green"></span>${__("Concluído")}</span>
+			</div>
+		`;
+	}
+
 	render_calendar_panel(events) {
 		const items = events[this.selectedDate] || [];
 		const title = `${__("Eventos em")} ${frappe.datetime.str_to_user(this.selectedDate)}`;
@@ -686,6 +795,10 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 	}
 
 	build_calendar_events() {
+		return this.entity === "schedule" ? this.build_schedule_calendar_events() : this.build_request_calendar_events();
+	}
+
+	build_request_calendar_events() {
 		const events = {};
 		const push = (dateStr, ev) => {
 			if (!dateStr) return;
@@ -704,12 +817,23 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 			});
 		});
 
-		(this.data.schedules || []).forEach((s) => {
+		return events;
+	}
+
+	build_schedule_calendar_events() {
+		const events = {};
+		const push = (dateStr, ev) => {
+			if (!dateStr) return;
+			if (!events[dateStr]) events[dateStr] = [];
+			events[dateStr].push(ev);
+		};
+
+		this.filtered_schedules().forEach((s) => {
 			if (!s.next_due_date) return;
 			push(s.next_due_date, {
 				kind: "schedule",
 				ref: s.name,
-				color: "teal",
+				color: this.schedule_status_color(s.status),
 				label: `${s.license_plate || s.vehicle} — ${s.maintenance_type}`,
 				sub: `${__("Plano")} · ${s.status}`,
 			});
@@ -740,6 +864,70 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 	}
 
 	// ---- create dialog -----------------------------------------------------
+
+	open_create_schedule_dialog(prefill = {}) {
+		const dialog = new frappe.ui.Dialog({
+			title: __("Novo Plano de Manutenção"),
+			size: "large",
+			fields: [
+				{
+					fieldname: "vehicle",
+					fieldtype: "Link",
+					options: "Fleet Vehicle",
+					label: __("Veículo"),
+					reqd: 1,
+				},
+				{
+					fieldname: "maintenance_type",
+					fieldtype: "Link",
+					options: "Fleet Maintenance Type",
+					label: __("Tipo de Manutenção"),
+					reqd: 1,
+				},
+				{ fieldname: "section_break_interval", fieldtype: "Section Break", label: __("Intervalo") },
+				{
+					fieldname: "interval_days",
+					fieldtype: "Int",
+					label: __("Intervalo (dias)"),
+				},
+				{
+					fieldname: "last_done_date",
+					fieldtype: "Date",
+					label: __("Última Realização (data)"),
+					default: frappe.datetime.get_today(),
+				},
+				{ fieldname: "column_break_interval", fieldtype: "Column Break" },
+				{
+					fieldname: "interval_km",
+					fieldtype: "Int",
+					label: __("Intervalo (Km)"),
+				},
+				{
+					fieldname: "last_done_odometer",
+					fieldtype: "Float",
+					label: __("Odómetro na Última Realização"),
+				},
+			],
+			primary_action_label: __("Criar Plano"),
+			primary_action: (values) => {
+				dialog.hide();
+				frappe.call({
+					method: "entre_fleet.entre_fleet.api.create_maintenance_schedule",
+					args: values,
+					freeze: true,
+					freeze_message: __("A criar plano..."),
+				}).then(() => {
+					frappe.show_alert({ message: __("Plano de manutenção criado."), indicator: "green" });
+					this.load_data();
+				});
+			},
+		});
+		dialog.show();
+		Object.keys(prefill).forEach((fieldname) => {
+			const value = prefill[fieldname];
+			if (value !== undefined && value !== null) dialog.set_value(fieldname, value);
+		});
+	}
 
 	open_create_dialog(prefill = {}) {
 		const dialog = new frappe.ui.Dialog({
