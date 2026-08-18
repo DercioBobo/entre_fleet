@@ -268,7 +268,7 @@ def get_vehicle_dossier(vehicle):
 			"non_conformities_count",
 			"docstatus",
 		],
-		order_by="inspection_date desc, creation desc",
+		order_by="inspection_date desc, `tabFleet Vehicle Inspection`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
 
