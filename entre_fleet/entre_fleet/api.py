@@ -105,7 +105,7 @@ def start_trip(vehicle, driver, odometer_start, departure_datetime=None, route=N
 	trip = frappe.new_doc("Fleet Trip Log")
 	trip.vehicle = vehicle
 	trip.driver = driver
-	trip.odometer_start = odometer_start
+	trip.odometer_start = frappe.utils.flt(odometer_start)
 	trip.departure_datetime = departure_datetime or frappe.utils.now_datetime()
 	trip.route = route
 	trip.cargo = cargo
@@ -120,9 +120,9 @@ def end_trip(trip_log, arrival_datetime, odometer_end, fuel_used=None, route=Non
 
 	trip = frappe.get_doc("Fleet Trip Log", trip_log)
 	trip.arrival_datetime = arrival_datetime
-	trip.odometer_end = odometer_end
+	trip.odometer_end = frappe.utils.flt(odometer_end)
 	if fuel_used:
-		trip.fuel_used = fuel_used
+		trip.fuel_used = frappe.utils.flt(fuel_used)
 	if route:
 		trip.route = route
 	if cargo:
