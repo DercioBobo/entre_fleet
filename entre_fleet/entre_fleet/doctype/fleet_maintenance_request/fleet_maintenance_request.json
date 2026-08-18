@@ -100,7 +100,13 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
+ "links": [
+  {
+   "group": "Manutenção",
+   "link_doctype": "Fleet Job Card",
+   "link_fieldname": "maintenance_request"
+  }
+ ],
  "modified": "2026-08-05 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Entre Fleet",
