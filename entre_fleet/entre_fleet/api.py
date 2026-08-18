@@ -406,6 +406,7 @@ def get_vehicle_dossier(vehicle):
 			fields=[
 				"name",
 				"maintenance_request",
+				"reported_issue",
 				"workshop",
 				"labor_cost",
 				"total_cost",

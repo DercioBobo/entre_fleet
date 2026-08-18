@@ -10,6 +10,7 @@
   "naming_series",
   "maintenance_request",
   "vehicle",
+  "reported_issue",
   "status",
   "column_break_top",
   "workshop",
@@ -47,6 +48,14 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.maintenance_request",
+   "fetch_from": "maintenance_request.reported_issue",
+   "fieldname": "reported_issue",
+   "fieldtype": "Small Text",
+   "label": "Problema Reportado",
+   "read_only": 1
+  },
+  {
    "default": "Aberto",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -65,6 +74,7 @@
    "label": "Oficina"
   },
   {
+   "depends_on": "eval:doc.status==\"Concluído\"",
    "fieldname": "completion_date",
    "fieldtype": "Date",
    "label": "Data de Conclusão"

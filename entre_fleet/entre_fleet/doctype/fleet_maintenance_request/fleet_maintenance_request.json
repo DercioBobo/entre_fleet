@@ -91,6 +91,7 @@
    "label": "Data de Abertura"
   },
   {
+   "depends_on": "eval:doc.status==\"Concluído\"",
    "fieldname": "completion_date",
    "fieldtype": "Date",
    "label": "Data de Conclusão"
@@ -101,6 +102,7 @@
    "label": "Quilometragem"
   },
   {
+   "depends_on": "eval:doc.tipo_manutencao=='Preventiva'",
    "fieldname": "periodicity_km",
    "fieldtype": "Int",
    "label": "Periodicidade (Km)"
@@ -115,6 +117,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.tipo_manutencao=='Preventiva'",
    "fieldname": "next_due_km",
    "fieldtype": "Float",
    "label": "Km para Manutenção"
