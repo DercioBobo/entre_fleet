@@ -14,6 +14,15 @@ const FTB_STATUS_LABEL = {
 	unavailable: __("Indisponível"),
 };
 
+const FTB_STATE_ORDER = { on_trip: 0, available: 1, unavailable: 2 };
+
+const FTB_FILTERS = [
+	["all", __("Todos")],
+	["on_trip", __("Em Viagem")],
+	["available", __("Disponíveis")],
+	["unavailable", __("Indisponíveis")],
+];
+
 entre_fleet.FleetTripBoard = class FleetTripBoard {
 	constructor(wrapper) {
 		this.wrapper = wrapper;
@@ -25,6 +34,8 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		});
 
 		this.$container = $('<div class="trip-board">').appendTo(this.page.body);
+		this.filter_status = "all";
+		this.search_term = "";
 		this.load_data();
 
 		this.tick_interval = setInterval(() => this.update_timers(), 30 * 1000);
@@ -49,16 +60,101 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			return;
 		}
 
-		this.$container.html(`<div class="trip-board-grid">${vehicles.map((v) => this.render_card(v)).join("")}</div>`);
+		this.$container.html(`
+			${this.render_toolbar(vehicles)}
+			<div class="trip-board-grid"></div>
+		`);
 
-		this.$container.find("[data-action='saida']").on("click", (e) => {
+		this.$container.find(".trip-board-search").on("input", (e) => {
+			this.search_term = e.currentTarget.value;
+			this.render_grid();
+		});
+
+		this.$container.find("[data-filter]").on("click", (e) => {
+			this.filter_status = $(e.currentTarget).attr("data-filter");
+			this.$container.find("[data-filter]").removeClass("active");
+			$(e.currentTarget).addClass("active");
+			this.render_grid();
+		});
+
+		this.render_grid();
+	}
+
+	render_toolbar(vehicles) {
+		const counts = { all: vehicles.length, on_trip: 0, available: 0, unavailable: 0 };
+		vehicles.forEach((v) => counts[this.card_state(v)]++);
+
+		const chips = FTB_FILTERS.map(
+			([key, label]) => `
+				<button
+					type="button"
+					class="trip-filter-chip trip-filter-chip-${key} ${key === this.filter_status ? "active" : ""}"
+					data-filter="${key}"
+				>
+					${label} <span class="trip-filter-count">${counts[key]}</span>
+				</button>
+			`
+		).join("");
+
+		return `
+			<div class="trip-board-toolbar">
+				<input
+					type="text"
+					class="trip-board-search"
+					placeholder="${this.text(__("Pesquisar por matrícula, marca, modelo ou condutor..."))}"
+					value="${this.text(this.search_term)}"
+				/>
+				<div class="trip-filter-chips">${chips}</div>
+			</div>
+		`;
+	}
+
+	render_grid() {
+		const vehicles = this.filtered_sorted_vehicles();
+		const $grid = this.$container.find(".trip-board-grid");
+
+		if (!vehicles.length) {
+			$grid.html(`<p class="trip-board-empty">${__("Sem veículos correspondentes.")}</p>`);
+			return;
+		}
+
+		$grid.html(vehicles.map((v) => this.render_card(v)).join(""));
+
+		$grid.find("[data-action='saida']").on("click", (e) => {
 			this.open_saida_dialog(this.vehicle_by_name($(e.currentTarget).attr("data-vehicle")));
 		});
-		this.$container.find("[data-action='chegada']").on("click", (e) => {
+		$grid.find("[data-action='chegada']").on("click", (e) => {
 			this.open_chegada_dialog(this.vehicle_by_name($(e.currentTarget).attr("data-vehicle")));
 		});
 
 		this.update_timers();
+	}
+
+	filtered_sorted_vehicles() {
+		const vehicles = this.data.vehicles || [];
+		const term = (this.search_term || "").trim().toLowerCase();
+
+		const filtered = vehicles.filter((v) => {
+			const state = this.card_state(v);
+			if (this.filter_status !== "all" && state !== this.filter_status) return false;
+			if (!term) return true;
+
+			return [
+				v.license_plate,
+				v.brand,
+				v.model,
+				v.assigned_driver_name,
+				v.open_trip && v.open_trip.driver_name,
+			]
+				.filter(Boolean)
+				.some((field) => field.toLowerCase().includes(term));
+		});
+
+		return filtered.sort((a, b) => {
+			const stateDiff = FTB_STATE_ORDER[this.card_state(a)] - FTB_STATE_ORDER[this.card_state(b)];
+			if (stateDiff !== 0) return stateDiff;
+			return (a.license_plate || "").localeCompare(b.license_plate || "");
+		});
 	}
 
 	vehicle_by_name(name) {
