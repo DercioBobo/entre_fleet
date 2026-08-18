@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Atalhos</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Visão Geral\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ficha do Veículo\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Registo de Viagens\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Plano e Registo de Manutenção\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Calendário de Manutenções\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Veículos\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pedidos de Manutenção\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Módulos</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Veículos e Condutores\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Operação\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Manutenção\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Documentos\",\"col\":3}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Atalhos</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Visão Geral\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ficha do Veículo\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Registo de Viagens\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Plano e Registo de Manutenção\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Veículos\",\"col\":3}},{\"type\":\"spacer\",\"data\":{\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Módulos</b></span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Veículos e Condutores\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Operação\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Manutenção\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Documentos\",\"col\":3}}]",
  "creation": "2026-08-05 00:00:00.000000",
  "docstatus": 0,
  "doctype": "Workspace",
@@ -227,19 +227,8 @@
    "type": "Page"
   },
   {
-   "doc_view": "Calendar",
-   "label": "Calendário de Manutenções",
-   "link_to": "Fleet Maintenance Schedule",
-   "type": "DocType"
-  },
-  {
    "label": "Veículos",
    "link_to": "Fleet Vehicle",
-   "type": "DocType"
-  },
-  {
-   "label": "Pedidos de Manutenção",
-   "link_to": "Fleet Maintenance Request",
    "type": "DocType"
   }
  ],
