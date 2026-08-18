@@ -295,10 +295,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	}
 
 	render_tyre_diagram(tyres, batteries) {
-		const axles = [];
-		for (let i = 0; i < tyres.length; i += 2) {
-			axles.push([tyres[i], tyres[i + 1]]);
-		}
+		const axles = this.group_tyres_by_axle(tyres);
 
 		const axleSpacing = 64;
 		const topPad = 30;
@@ -313,12 +310,12 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				height - topPad * 2
 			}" rx="6" class="dossier-tyre-chassis" />`;
 		}
-		axles.forEach((pair, i) => {
+		axles.forEach((axle, i) => {
 			const y = topPad + i * axleSpacing;
 			svg += `<line x1="30" y1="${y}" x2="${width - 30}" y2="${y}" class="dossier-tyre-axle-bar" />`;
-			svg += this.render_tyre_rect(pair[0], 10, y - 18);
-			svg += this.render_tyre_rect(pair[1], width - 40, y - 18);
-			svg += `<text x="${width / 2}" y="${y + 4}" class="dossier-tyre-axle-label">${i + 1}</text>`;
+			svg += this.render_tyre_group(axle.left, 10, y - 18, 30, 36);
+			svg += this.render_tyre_group(axle.right, width - 40, y - 18, 30, 36);
+			svg += `<text x="${width / 2}" y="${y + 4}" class="dossier-tyre-axle-label">${axle.axle_number}</text>`;
 		});
 		svg += `</svg>`;
 
@@ -335,11 +332,36 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		`;
 	}
 
-	render_tyre_rect(tyre, x, y) {
+	group_tyres_by_axle(tyres) {
+		const axles = {};
+		tyres.forEach((tyre) => {
+			const key = tyre.axle_number;
+			if (!axles[key]) axles[key] = { axle_number: key, left: [], right: [] };
+			axles[key][tyre.side === "Direito" ? "right" : "left"].push(tyre);
+		});
+		return Object.keys(axles)
+			.map((key) => axles[key])
+			.sort((a, b) => a.axle_number - b.axle_number);
+	}
+
+	render_tyre_group(tyres, x, y, width, height) {
+		if (!tyres.length) return this.render_tyre_rect(null, x, y, width, height);
+		if (tyres.length === 1) return this.render_tyre_rect(tyres[0], x, y, width, height);
+
+		const gap = 3;
+		const rectWidth = (width - gap) / 2;
+		return (
+			this.render_tyre_rect(tyres[0], x, y, rectWidth, height) +
+			this.render_tyre_rect(tyres[1], x + rectWidth + gap, y, rectWidth, height)
+		);
+	}
+
+	render_tyre_rect(tyre, x, y, width, height) {
 		if (!tyre) return "";
 		const color = this.condition_color(tyre.condition);
+		const rx = Math.min(5, width / 4);
 		return `
-			<rect x="${x}" y="${y}" width="30" height="36" rx="5" class="dossier-tyre-rect dossier-tyre-${color}">
+			<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${rx}" class="dossier-tyre-rect dossier-tyre-${color}">
 				<title>${this.text(tyre.position_label)}: ${this.text(tyre.condition || __("Sem registo"))}</title>
 			</rect>
 		`;

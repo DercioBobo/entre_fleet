@@ -25,10 +25,7 @@ entre_fleet.render_tyre_battery_schematic = function (frm) {
 		return;
 	}
 
-	const axles = [];
-	for (let i = 0; i < tyres.length; i += 2) {
-		axles.push([tyres[i], tyres[i + 1]]);
-	}
+	const axles = entre_fleet.group_tyres_by_axle(tyres);
 
 	const axleSpacing = 62;
 	const topPad = 26;
@@ -43,12 +40,12 @@ entre_fleet.render_tyre_battery_schematic = function (frm) {
 		svg += `<rect x="${width / 2 - 14}" y="${topPad}" width="28" height="${
 			height - topPad * 2
 		}" rx="8" class="fv-schematic-chassis" />`;
-		axles.forEach((pair, i) => {
+		axles.forEach((axle, i) => {
 			const y = topPad + i * axleSpacing;
 			svg += `<line x1="26" y1="${y}" x2="${width - 26}" y2="${y}" class="fv-schematic-axle-bar" />`;
-			svg += entre_fleet.render_tyre_rect(frm, pair[0], 6, y - 20);
-			svg += entre_fleet.render_tyre_rect(frm, pair[1], width - 36, y - 20);
-			svg += `<text x="${width / 2}" y="${y + 4}" class="fv-schematic-axle-label">${i + 1}º</text>`;
+			svg += entre_fleet.render_tyre_group(frm, axle.left, 6, y - 20, 30, 40);
+			svg += entre_fleet.render_tyre_group(frm, axle.right, width - 36, y - 20, 30, 40);
+			svg += `<text x="${width / 2}" y="${y + 4}" class="fv-schematic-axle-label">${axle.axle_number}º</text>`;
 		});
 		svg += `</svg>`;
 	}
@@ -78,13 +75,38 @@ entre_fleet.render_tyre_battery_schematic = function (frm) {
 	});
 };
 
-entre_fleet.render_tyre_rect = function (frm, tyre, x, y) {
+entre_fleet.group_tyres_by_axle = function (tyres) {
+	const axles = {};
+	tyres.forEach((tyre) => {
+		const key = tyre.axle_number;
+		if (!axles[key]) axles[key] = { axle_number: key, left: [], right: [] };
+		axles[key][tyre.side === "Direito" ? "right" : "left"].push(tyre);
+	});
+	return Object.keys(axles)
+		.map((key) => axles[key])
+		.sort((a, b) => a.axle_number - b.axle_number);
+};
+
+entre_fleet.render_tyre_group = function (frm, tyres, x, y, width, height) {
+	if (!tyres.length) return entre_fleet.render_tyre_rect(frm, null, x, y, width, height);
+	if (tyres.length === 1) return entre_fleet.render_tyre_rect(frm, tyres[0], x, y, width, height);
+
+	const gap = 3;
+	const rectWidth = (width - gap) / 2;
+	return (
+		entre_fleet.render_tyre_rect(frm, tyres[0], x, y, rectWidth, height) +
+		entre_fleet.render_tyre_rect(frm, tyres[1], x + rectWidth + gap, y, rectWidth, height)
+	);
+};
+
+entre_fleet.render_tyre_rect = function (frm, tyre, x, y, width, height) {
 	if (!tyre) return "";
 	const color = FV_CONDITION_COLOR[tyre.condition] || "empty";
 	const label = frappe.utils.escape_html(`${tyre.position_label || ""}: ${tyre.condition || __("Sem registo")}`);
+	const rx = Math.min(6, width / 4);
 	return `
 		<g data-fv-fieldname="tyres" data-fv-row="${tyre.name}" class="fv-schematic-tyre-group" tabindex="0">
-			<rect x="${x}" y="${y}" width="30" height="40" rx="6" class="fv-schematic-tyre-rect fv-schematic-${color}">
+			<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${rx}" class="fv-schematic-tyre-rect fv-schematic-${color}">
 				<title>${label}</title>
 			</rect>
 		</g>

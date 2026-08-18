@@ -7,6 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "position_label",
+  "axle_number",
+  "side",
   "condition",
   "last_changed_date"
  ],
@@ -16,6 +18,21 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Posição",
+   "read_only": 1
+  },
+  {
+   "fieldname": "axle_number",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Eixo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "side",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Lado",
+   "options": "Esquerdo\nDireito",
    "read_only": 1
   },
   {

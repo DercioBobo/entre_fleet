@@ -43,11 +43,37 @@ class FleetVehicle(Document):
 				frappe.msgprint(_("{0} expira em {1} (dentro de 30 dias).").format(_(label), expiry))
 
 	def sync_tyre_positions(self):
-		labels = []
+		expected = []
 		for axle in range(1, (self.axle_count or 0) + 1):
-			labels.append(f"{axle}º Eixo Esquerdo")
-			labels.append(f"{axle}º Eixo Direito")
-		self._sync_position_table("tyres", labels)
+			is_dual = bool(self.dual_rear_tyres) and axle > 1
+			for side in ("Esquerdo", "Direito"):
+				if is_dual:
+					expected.append((axle, side, f"{axle}º Eixo {side} Externo"))
+					expected.append((axle, side, f"{axle}º Eixo {side} Interno"))
+				else:
+					expected.append((axle, side, f"{axle}º Eixo {side}"))
+
+		current = [(row.axle_number, row.side, row.position_label) for row in self.get("tyres")]
+		if current == expected:
+			return
+
+		existing_state = {
+			row.position_label: {"condition": row.condition, "last_changed_date": row.last_changed_date}
+			for row in self.get("tyres")
+		}
+		self.set("tyres", [])
+		for axle, side, label in expected:
+			state = existing_state.get(label, {})
+			self.append(
+				"tyres",
+				{
+					"position_label": label,
+					"axle_number": axle,
+					"side": side,
+					"condition": state.get("condition"),
+					"last_changed_date": state.get("last_changed_date"),
+				},
+			)
 
 	def sync_battery_positions(self):
 		labels = [f"Bateria {n}" for n in range(1, (self.battery_count or 0) + 1)]
