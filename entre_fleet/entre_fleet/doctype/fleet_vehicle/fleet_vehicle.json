@@ -30,6 +30,7 @@
   "column_break_tyres",
   "battery_count",
   "section_break_tyres_tables",
+  "tyre_battery_schematic",
   "tyres",
   "column_break_tyres_table",
   "batteries",
@@ -167,6 +168,11 @@
   {
    "fieldname": "section_break_tyres_tables",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "tyre_battery_schematic",
+   "fieldtype": "HTML",
+   "label": "Esquema de Pneus e Baterias"
   },
   {
    "fieldname": "tyres",
