@@ -1,0 +1,229 @@
+.trip-board {
+	--tb-navy-900: #0b2436;
+	--tb-navy-700: #123b52;
+	--tb-teal-500: #1c8c82;
+	--tb-teal-100: #e4f4f1;
+	--tb-amber-500: #e0a030;
+	--tb-amber-100: #fbf0dd;
+	--tb-red-500: #c4453a;
+	--tb-gray-500: #8994a1;
+	--tb-gray-600: #5b6672;
+	--tb-gray-200: #e3e7ea;
+	--tb-sand-50: #f7f5f1;
+
+	padding: 4px 2px 40px;
+	color: var(--tb-navy-900);
+}
+
+.trip-board * {
+	box-sizing: border-box;
+}
+
+.trip-board-empty {
+	color: var(--tb-gray-600);
+	font-size: 13px;
+}
+
+.trip-board-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+	gap: 16px;
+}
+
+/* Card */
+.trip-card {
+	position: relative;
+	background: #fff;
+	border: 1px solid var(--tb-gray-200);
+	border-top: 3px solid var(--tb-gray-500);
+	border-radius: 12px;
+	padding: 16px 18px 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.trip-card:hover {
+	box-shadow: 0 4px 14px rgba(11, 36, 54, 0.1);
+	transform: translateY(-1px);
+}
+
+.trip-card-available {
+	border-top-color: var(--tb-teal-500);
+}
+
+.trip-card-on_trip {
+	border-top-color: var(--tb-amber-500);
+	background: linear-gradient(180deg, var(--tb-amber-100) 0%, #fff 90px);
+}
+
+.trip-card-unavailable {
+	border-top-color: var(--tb-gray-200);
+	opacity: 0.75;
+}
+
+.trip-card-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.trip-card-plate {
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+	font-weight: 700;
+	font-size: 13px;
+	letter-spacing: 1.5px;
+	color: var(--tb-navy-900);
+	background: var(--tb-sand-50);
+	border: 1px solid var(--tb-gray-200);
+	border-radius: 4px;
+	padding: 3px 8px;
+}
+
+.trip-card-status {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+	padding: 3px 9px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.trip-card-status-available {
+	background: var(--tb-teal-100);
+	color: var(--tb-teal-500);
+}
+
+.trip-card-status-on_trip {
+	background: var(--tb-amber-500);
+	color: #fff;
+}
+
+.trip-card-status-unavailable {
+	background: var(--tb-gray-200);
+	color: var(--tb-gray-600);
+}
+
+.trip-card-title {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--tb-navy-900);
+}
+
+/* Stepper */
+.trip-stepper {
+	display: flex;
+	align-items: center;
+	margin: 2px 0 4px;
+}
+
+.trip-step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	font-size: 9px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--tb-gray-500);
+	flex: 0 0 auto;
+	width: 56px;
+	text-align: center;
+}
+
+.trip-step-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: var(--tb-gray-200);
+	border: 2px solid var(--tb-gray-200);
+}
+
+.trip-step-done .trip-step-dot {
+	background: var(--tb-teal-500);
+	border-color: var(--tb-teal-500);
+}
+
+.trip-step-done {
+	color: var(--tb-teal-500);
+}
+
+.trip-step-active .trip-step-dot {
+	background: var(--tb-amber-500);
+	border-color: var(--tb-amber-500);
+	animation: trip-pulse 1.6s ease-in-out infinite;
+}
+
+.trip-step-active {
+	color: var(--tb-amber-500);
+}
+
+.trip-step-line {
+	flex: 1 1 auto;
+	height: 2px;
+	background: var(--tb-gray-200);
+	margin-bottom: 15px;
+}
+
+.trip-step-line-done,
+.trip-step-line-active {
+	background: var(--tb-amber-500);
+}
+
+@keyframes trip-pulse {
+	0%, 100% {
+		box-shadow: 0 0 0 0 rgba(224, 160, 48, 0.5);
+	}
+	50% {
+		box-shadow: 0 0 0 5px rgba(224, 160, 48, 0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.trip-step-active .trip-step-dot {
+		animation: none;
+	}
+}
+
+/* Card body */
+.trip-card-details {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.trip-card-detail {
+	font-size: 12px;
+	color: var(--tb-gray-600);
+}
+
+.trip-card-detail strong {
+	color: var(--tb-navy-700);
+	font-weight: 600;
+}
+
+.trip-card-detail-muted {
+	font-style: italic;
+}
+
+.trip-card-elapsed {
+	margin-top: 4px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--tb-amber-500);
+}
+
+.trip-card-btn {
+	margin-top: auto;
+	align-self: flex-start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.trip-card {
+		transition: none;
+	}
+}

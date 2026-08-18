@@ -48,6 +48,89 @@ def list_vehicles():
 
 
 @frappe.whitelist()
+def get_trip_board():
+	if not frappe.has_permission("Fleet Trip Log", "read"):
+		frappe.throw(_("Não tem permissão para ver viagens."), frappe.PermissionError)
+
+	vehicles = frappe.get_all(
+		"Fleet Vehicle",
+		filters={"status": ["!=", "Abatido"]},
+		fields=[
+			"name",
+			"license_plate",
+			"brand",
+			"model",
+			"status",
+			"current_odometer",
+			"assigned_driver",
+			"assigned_driver.driver_name as assigned_driver_name",
+		],
+		order_by="license_plate asc",
+		limit_page_length=0,
+	)
+
+	open_trips = frappe.get_all(
+		"Fleet Trip Log",
+		filters={"docstatus": 0, "arrival_datetime": ["is", "not set"]},
+		fields=[
+			"name",
+			"vehicle",
+			"driver",
+			"driver.driver_name as driver_name",
+			"departure_datetime",
+			"odometer_start",
+			"route_purpose",
+		],
+	)
+	open_trip_by_vehicle = {t.vehicle: t for t in open_trips}
+
+	for vehicle in vehicles:
+		vehicle["open_trip"] = open_trip_by_vehicle.get(vehicle.name)
+
+	drivers = frappe.get_all(
+		"Fleet Driver",
+		filters={"status": "Activo"},
+		fields=["name", "driver_name"],
+		order_by="driver_name asc",
+		limit_page_length=0,
+	)
+
+	return {"vehicles": vehicles, "drivers": drivers}
+
+
+@frappe.whitelist()
+def start_trip(vehicle, driver, odometer_start, departure_datetime=None, route_purpose=None):
+	if not frappe.has_permission("Fleet Trip Log", "create"):
+		frappe.throw(_("Não tem permissão para registar viagens."), frappe.PermissionError)
+
+	trip = frappe.new_doc("Fleet Trip Log")
+	trip.vehicle = vehicle
+	trip.driver = driver
+	trip.odometer_start = odometer_start
+	trip.departure_datetime = departure_datetime or frappe.utils.now_datetime()
+	trip.route_purpose = route_purpose
+	trip.insert()
+	return trip.name
+
+
+@frappe.whitelist()
+def end_trip(trip_log, arrival_datetime, odometer_end, fuel_used=None, route_purpose=None):
+	if not frappe.has_permission("Fleet Trip Log", "submit"):
+		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
+
+	trip = frappe.get_doc("Fleet Trip Log", trip_log)
+	trip.arrival_datetime = arrival_datetime
+	trip.odometer_end = odometer_end
+	if fuel_used:
+		trip.fuel_used = fuel_used
+	if route_purpose:
+		trip.route_purpose = route_purpose
+	trip.save()
+	trip.submit()
+	return trip.name
+
+
+@frappe.whitelist()
 def get_vehicle_dossier(vehicle):
 	if not frappe.has_permission("Fleet Vehicle", "read", vehicle):
 		frappe.throw(_("Não tem permissão para ver este veículo."), frappe.PermissionError)
