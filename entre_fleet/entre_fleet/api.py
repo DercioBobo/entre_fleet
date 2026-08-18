@@ -132,6 +132,157 @@ def end_trip(trip_log, arrival_datetime, odometer_end, fuel_used=None, route=Non
 	return trip.name
 
 
+MAINTENANCE_PLAN_OPEN_STATUSES = ("Aberto", "Em Andamento", "Parado")
+
+
+@frappe.whitelist()
+def get_maintenance_plan():
+	if not frappe.has_permission("Fleet Maintenance Request", "read"):
+		frappe.throw(_("Não tem permissão para ver o plano de manutenção."), frappe.PermissionError)
+
+	requests = frappe.get_all(
+		"Fleet Maintenance Request",
+		fields=[
+			"name",
+			"vehicle",
+			"vehicle.license_plate as license_plate",
+			"vehicle.brand as brand",
+			"vehicle.model as model",
+			"vehicle.vehicle_type as vehicle_type",
+			"tipo_manutencao",
+			"maintenance_schedule",
+			"status",
+			"priority",
+			"responsavel",
+			"opening_date",
+			"completion_date",
+			"periodicity_km",
+			"odometer_at_request",
+			"next_due_km",
+			"reported_issue",
+			"required_parts",
+			"remarks",
+		],
+		order_by="opening_date desc, `tabFleet Maintenance Request`.creation desc",
+		limit_page_length=0,
+	)
+
+	schedules = frappe.get_all(
+		"Fleet Maintenance Schedule",
+		fields=[
+			"name",
+			"vehicle",
+			"vehicle.license_plate as license_plate",
+			"maintenance_type",
+			"status",
+			"interval_days",
+			"interval_km",
+			"last_done_date",
+			"next_due_date",
+			"next_due_km",
+		],
+		order_by="next_due_date asc",
+		limit_page_length=0,
+	)
+
+	vehicles = frappe.get_all(
+		"Fleet Vehicle",
+		filters={"status": ["!=", "Abatido"]},
+		fields=["name", "license_plate", "brand", "model", "vehicle_type"],
+		order_by="license_plate asc",
+		limit_page_length=0,
+	)
+
+	technicians = frappe.get_all(
+		"Fleet Maintenance Request",
+		filters={"responsavel": ["is", "set"]},
+		fields=["responsavel"],
+		distinct=True,
+		order_by="responsavel asc",
+		pluck="responsavel",
+	)
+
+	status_counts = {"Aberto": 0, "Em Andamento": 0, "Parado": 0, "Concluído": 0, "Cancelado": 0}
+	for r in requests:
+		if r.status in status_counts:
+			status_counts[r.status] += 1
+
+	overdue_schedules = len([s for s in schedules if s.status == "Vencido"])
+	due_soon_schedules = len([s for s in schedules if s.status == "A Vencer"])
+
+	return {
+		"requests": requests,
+		"schedules": schedules,
+		"vehicles": vehicles,
+		"technicians": technicians,
+		"summary": {
+			"total": len(requests),
+			"status_counts": status_counts,
+			"open_count": sum(status_counts[s] for s in MAINTENANCE_PLAN_OPEN_STATUSES),
+			"overdue_schedules": overdue_schedules,
+			"due_soon_schedules": due_soon_schedules,
+		},
+	}
+
+
+@frappe.whitelist()
+def create_maintenance_request(
+	vehicle,
+	tipo_manutencao,
+	reported_issue,
+	maintenance_schedule=None,
+	status=None,
+	priority=None,
+	responsavel=None,
+	opening_date=None,
+	completion_date=None,
+	periodicity_km=None,
+	odometer_at_request=None,
+	next_due_km=None,
+	required_parts=None,
+	remarks=None,
+):
+	if not frappe.has_permission("Fleet Maintenance Request", "create"):
+		frappe.throw(_("Não tem permissão para criar pedidos de manutenção."), frappe.PermissionError)
+
+	doc = frappe.new_doc("Fleet Maintenance Request")
+	doc.vehicle = vehicle
+	doc.tipo_manutencao = tipo_manutencao
+	doc.reported_issue = reported_issue
+	doc.maintenance_schedule = maintenance_schedule
+	doc.priority = priority
+	doc.responsavel = responsavel
+	doc.required_parts = required_parts
+	doc.remarks = remarks
+	if status:
+		doc.status = status
+	if opening_date:
+		doc.opening_date = opening_date
+	if completion_date:
+		doc.completion_date = completion_date
+	if periodicity_km:
+		doc.periodicity_km = frappe.utils.cint(periodicity_km)
+	if odometer_at_request:
+		doc.odometer_at_request = frappe.utils.flt(odometer_at_request)
+	if next_due_km:
+		doc.next_due_km = frappe.utils.flt(next_due_km)
+	doc.insert()
+	return doc.name
+
+
+@frappe.whitelist()
+def set_maintenance_status(name, status):
+	if not frappe.has_permission("Fleet Maintenance Request", "write", name):
+		frappe.throw(_("Não tem permissão para alterar este pedido."), frappe.PermissionError)
+
+	doc = frappe.get_doc("Fleet Maintenance Request", name)
+	doc.status = status
+	if status == "Concluído" and not doc.completion_date:
+		doc.completion_date = frappe.utils.today()
+	doc.save()
+	return doc.status
+
+
 @frappe.whitelist()
 def get_vehicle_dossier(vehicle):
 	if not frappe.has_permission("Fleet Vehicle", "read", vehicle):
@@ -202,9 +353,15 @@ def get_vehicle_dossier(vehicle):
 			"status",
 			"priority",
 			"tipo_manutencao",
+			"responsavel",
 			"reported_issue",
 			"required_parts",
+			"remarks",
 			"opening_date",
+			"completion_date",
+			"periodicity_km",
+			"odometer_at_request",
+			"next_due_km",
 		],
 		order_by="opening_date desc, creation desc",
 		limit_page_length=HISTORY_LIMIT,
@@ -329,7 +486,7 @@ def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents,
 		if trip.odometer_start and trip.odometer_end and trip.odometer_end > trip.odometer_start:
 			total_km += trip.odometer_end - trip.odometer_start
 
-	open_maintenance = [m for m in maintenance_requests if m.status in ("Aberto", "Em Andamento")]
+	open_maintenance = [m for m in maintenance_requests if m.status in ("Aberto", "Em Andamento", "Parado")]
 	expiring_documents = [d for d in documents if d["status"] in ("A Expirar", "Expirado")]
 	overdue_schedules = [s for s in schedules if s.status == "Vencido"]
 	non_conforming_inspections = [i for i in inspections if i.overall_status == "Não Conforme"]

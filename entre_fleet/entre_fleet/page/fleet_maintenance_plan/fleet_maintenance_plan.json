@@ -1,0 +1,20 @@
+{
+ "creation": "2026-08-18 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-08-18 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Entre Fleet",
+ "name": "fleet-maintenance-plan",
+ "owner": "Administrator",
+ "page_name": "fleet-maintenance-plan",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Plano e Registo de Manutenção"
+}

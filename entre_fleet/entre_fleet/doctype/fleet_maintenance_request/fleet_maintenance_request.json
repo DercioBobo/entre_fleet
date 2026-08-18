@@ -13,11 +13,18 @@
   "status",
   "column_break_top",
   "priority",
+  "responsavel",
   "opening_date",
   "completion_date",
+  "section_break_km",
+  "periodicity_km",
+  "odometer_at_request",
+  "column_break_km",
+  "next_due_km",
   "section_break_issue",
   "reported_issue",
-  "required_parts"
+  "required_parts",
+  "remarks"
  ],
  "fields": [
   {
@@ -58,7 +65,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Estado",
-   "options": "Aberto\nEm Andamento\nConcluído\nCancelado"
+   "options": "Aberto\nEm Andamento\nConcluído\nParado\nCancelado"
   },
   {
    "fieldname": "column_break_top",
@@ -72,6 +79,12 @@
    "options": "Baixa\nMédia\nAlta\nUrgente"
   },
   {
+   "fieldname": "responsavel",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Responsável"
+  },
+  {
    "default": "Today",
    "fieldname": "opening_date",
    "fieldtype": "Date",
@@ -81,6 +94,30 @@
    "fieldname": "completion_date",
    "fieldtype": "Date",
    "label": "Data de Conclusão"
+  },
+  {
+   "fieldname": "section_break_km",
+   "fieldtype": "Section Break",
+   "label": "Quilometragem"
+  },
+  {
+   "fieldname": "periodicity_km",
+   "fieldtype": "Int",
+   "label": "Periodicidade (Km)"
+  },
+  {
+   "fieldname": "odometer_at_request",
+   "fieldtype": "Float",
+   "label": "Km Actual"
+  },
+  {
+   "fieldname": "column_break_km",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_due_km",
+   "fieldtype": "Float",
+   "label": "Km para Manutenção"
   },
   {
    "fieldname": "section_break_issue",
@@ -97,6 +134,11 @@
    "fieldname": "required_parts",
    "fieldtype": "Small Text",
    "label": "Peças Necessárias"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Observações"
   }
  ],
  "index_web_pages_for_search": 1,
