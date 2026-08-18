@@ -282,10 +282,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		const batteries = vehicle.batteries || [];
 
 		if (!tyres.length && !batteries.length) {
-			const body = `<p class="dossier-empty">${this.text(
-				__("Sem pneus ou baterias configurados para este veículo.")
-			)}</p>`;
-			return this.render_section(__("Pneus e Baterias"), body, 0);
+			return "";
 		}
 
 		return this.render_section(
@@ -498,6 +495,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 							.join(" · ") || "—",
 				},
 				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
+				{ label: __("Trabalho Planeado"), render: (r) => this.text(r.planned_work) },
 			],
 			schedules,
 			__("Sem manutenção preventiva agendada para este veículo.")
@@ -522,44 +520,56 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	}
 
 	render_maintenance_section(maintenance_requests, job_cards) {
-		const requestsTable = this.render_table(
-			[
-				{ label: __("Nº"), render: (r) => this.link("Fleet Maintenance Request", r.name) },
-				{ label: __("Tipo"), render: (r) => this.badge(r.tipo_manutencao || "—", r.tipo_manutencao === "Preventiva" ? "green" : "amber") },
-				{ label: __("Data Abertura"), render: (r) => this.date(r.opening_date) },
-				{ label: __("Responsável"), render: (r) => this.text(r.responsavel) },
-				{ label: __("Prioridade"), render: (r) => this.badge(r.priority || "—", "gray") },
-				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
-				{ label: __("Problema Reportado"), render: (r) => this.text(r.reported_issue) },
-				{ label: __("Peças Necessárias"), render: (r) => this.text(r.required_parts) },
-				{ label: __("Observações"), render: (r) => this.text(r.remarks) },
-			],
-			maintenance_requests,
-			__("Sem pedidos de manutenção para este veículo.")
-		);
+		const requestsBlock = maintenance_requests.length
+			? `
+				<h4>${this.text(__("Pedidos de Manutenção"))}</h4>
+				${this.render_table(
+					[
+						{ label: __("Nº"), render: (r) => this.link("Fleet Maintenance Request", r.name) },
+						{
+							label: __("Tipo"),
+							render: (r) => this.badge(r.tipo_manutencao || "—", r.tipo_manutencao === "Preventiva" ? "green" : "amber"),
+						},
+						{ label: __("Data Abertura"), render: (r) => this.date(r.opening_date) },
+						{ label: __("Responsável"), render: (r) => this.text(r.responsavel) },
+						{ label: __("Prioridade"), render: (r) => this.badge(r.priority || "—", "gray") },
+						{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
+						{ label: __("Problema Reportado"), render: (r) => this.text(r.reported_issue) },
+						{ label: __("Peças Necessárias"), render: (r) => this.text(r.required_parts) },
+						{ label: __("Observações"), render: (r) => this.text(r.remarks) },
+					],
+					maintenance_requests,
+					""
+				)}
+			`
+			: "";
 
-		const jobCardsTable = this.render_table(
-			[
-				{ label: __("Nº"), render: (r) => this.link("Fleet Job Card", r.name) },
-				{ label: __("Pedido"), render: (r) => this.link("Fleet Maintenance Request", r.maintenance_request) },
-				{ label: __("Oficina"), render: (r) => this.text(r.workshop) },
-				{ label: __("Custo Mão de Obra"), render: (r) => this.currency(r.labor_cost) },
-				{ label: __("Custo Total"), render: (r) => this.currency(r.total_cost) },
-				{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
-				{ label: __("Conclusão"), render: (r) => this.date(r.completion_date) },
-				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
-			],
-			job_cards,
-			__("Sem ordens de serviço para este veículo.")
-		);
+		const jobCardsBlock = job_cards.length
+			? `
+				<h4>${this.text(__("Ordens de Serviço"))}</h4>
+				${this.render_table(
+					[
+						{ label: __("Nº"), render: (r) => this.link("Fleet Job Card", r.name) },
+						{ label: __("Pedido"), render: (r) => this.link("Fleet Maintenance Request", r.maintenance_request) },
+						{ label: __("Problema Reportado"), render: (r) => this.text(r.reported_issue) },
+						{ label: __("Oficina"), render: (r) => this.text(r.workshop) },
+						{ label: __("Custo Mão de Obra"), render: (r) => this.currency(r.labor_cost) },
+						{ label: __("Custo Total"), render: (r) => this.currency(r.total_cost) },
+						{ label: __("Estado"), render: (r) => this.badge(r.status, STATUS_COLOR[r.status] || "gray") },
+						{ label: __("Conclusão"), render: (r) => this.date(r.completion_date) },
+						{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
+					],
+					job_cards,
+					""
+				)}
+			`
+			: "";
 
-		const body = `
-			<h4>${this.text(__("Pedidos de Manutenção"))}</h4>
-			${requestsTable}
-			<h4>${this.text(__("Ordens de Serviço"))}</h4>
-			${jobCardsTable}
-		`;
-		return this.render_section(__("Manutenção"), body, maintenance_requests.length + job_cards.length);
+		return this.render_section(
+			__("Manutenção"),
+			`${requestsBlock}${jobCardsBlock}`,
+			maintenance_requests.length + job_cards.length
+		);
 	}
 
 	render_documents_section(documents) {
@@ -578,10 +588,10 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	// ---- generic building blocks -----------------------------------------
 
 	render_section(title, innerHtml, count) {
-		const countBadge = count != null ? `<span class="dossier-section-count">${count}</span>` : "";
+		if (!count) return "";
 		return `
 			<details class="dossier-section" open>
-				<summary>${this.text(title)}${countBadge}</summary>
+				<summary>${this.text(title)}<span class="dossier-section-count">${count}</span></summary>
 				<div class="dossier-section-body">${innerHtml}</div>
 			</details>
 		`;

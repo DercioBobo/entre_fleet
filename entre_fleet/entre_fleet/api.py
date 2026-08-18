@@ -183,6 +183,7 @@ def get_maintenance_plan():
 			"last_done_odometer",
 			"next_due_date",
 			"next_due_km",
+			"planned_work",
 		],
 		order_by="next_due_date asc",
 		limit_page_length=0,
@@ -281,6 +282,7 @@ def create_maintenance_schedule(
 	last_done_date=None,
 	interval_km=None,
 	last_done_odometer=None,
+	planned_work=None,
 ):
 	if not frappe.has_permission("Fleet Maintenance Schedule", "create"):
 		frappe.throw(_("Não tem permissão para criar planos de manutenção."), frappe.PermissionError)
@@ -296,6 +298,7 @@ def create_maintenance_schedule(
 		doc.interval_km = frappe.utils.cint(interval_km)
 	if last_done_odometer:
 		doc.last_done_odometer = frappe.utils.flt(last_done_odometer)
+	doc.planned_work = planned_work
 	doc.insert()
 	return doc.name
 
@@ -442,6 +445,7 @@ def get_vehicle_dossier(vehicle):
 			"last_done_odometer",
 			"next_due_km",
 			"status",
+			"planned_work",
 		],
 		limit_page_length=HISTORY_LIMIT,
 	)

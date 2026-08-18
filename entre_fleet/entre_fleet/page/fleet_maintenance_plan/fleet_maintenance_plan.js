@@ -297,7 +297,7 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 			if (this.filter_schedule_status !== "all" && s.status !== this.filter_schedule_status) return false;
 			if (!term) return true;
 
-			return [s.license_plate, s.vehicle, s.brand, s.model, s.maintenance_type]
+			return [s.license_plate, s.vehicle, s.brand, s.model, s.maintenance_type, s.planned_work]
 				.filter(Boolean)
 				.some((field) => String(field).toLowerCase().includes(term));
 		});
@@ -327,7 +327,8 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 			tipo_manutencao: "Preventiva",
 			maintenance_schedule: schedule.name,
 			next_due_km: schedule.next_due_km || null,
-			reported_issue: `${schedule.maintenance_type} — ${__("manutenção preventiva agendada")}`,
+			reported_issue:
+				schedule.planned_work || `${schedule.maintenance_type} — ${__("manutenção preventiva agendada")}`,
 		};
 	}
 
@@ -418,7 +419,12 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 								<span>${this.text([s.brand, s.model].filter(Boolean).join(" ") || "—")}</span>
 							</div>
 						</td>
-						<td>${this.text(s.maintenance_type)}</td>
+						<td>
+							<div class="mp-cell-vehicle">
+								<strong>${this.text(s.maintenance_type)}</strong>
+								${s.planned_work ? `<span>${this.text(s.planned_work)}</span>` : ""}
+							</div>
+						</td>
 						<td>${this.text(this.format_interval(s))}</td>
 						<td>${this.text(this.format_last_done(s))}</td>
 						<td>${this.text(this.format_next_due(s))}</td>
@@ -490,6 +496,7 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 				</div>
 				<div class="mp-card-vehicle">${this.text([s.brand, s.model].filter(Boolean).join(" ") || "—")}</div>
 				<div class="mp-card-desc">${this.text(s.maintenance_type)}</div>
+				${s.planned_work ? `<div class="mp-card-desc">${this.text(s.planned_work)}</div>` : ""}
 				<div class="mp-card-meta">
 					<span>&#8635; ${this.text(this.format_interval(s))}</span>
 					<span>&#128197; ${this.text(this.format_next_due(s))}</span>
@@ -919,6 +926,13 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 					depends_on: "eval:doc.interval_km",
 					mandatory_depends_on: "eval:doc.interval_km",
 				},
+				{ fieldname: "section_break_desc", fieldtype: "Section Break", label: __("Descrição") },
+				{
+					fieldname: "planned_work",
+					fieldtype: "Small Text",
+					label: __("Trabalho Planeado"),
+					description: __("O que deve ser feito quando esta manutenção vencer — usado para preencher o pedido automaticamente."),
+				},
 			],
 			primary_action_label: __("Criar Plano"),
 			primary_action: (values) => {
@@ -970,8 +984,11 @@ entre_fleet.FleetMaintenancePlan = class FleetMaintenancePlan {
 					fieldname: "maintenance_schedule",
 					fieldtype: "Link",
 					options: "Fleet Maintenance Schedule",
-					label: __("Plano de Manutenção"),
-					hidden: 1,
+					label: __("Plano de Manutenção (opcional)"),
+					description: __(
+						"Vincule a um plano para reiniciar o respectivo ciclo quando este pedido for concluído — mesmo que seja Corretiva."
+					),
+					get_query: () => ({ filters: { vehicle: dialog.get_value("vehicle") } }),
 				},
 				{ fieldname: "column_break_type", fieldtype: "Column Break" },
 				{

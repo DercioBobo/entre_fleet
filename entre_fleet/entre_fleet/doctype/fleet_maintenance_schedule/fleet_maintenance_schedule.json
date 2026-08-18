@@ -19,6 +19,8 @@
   "last_done_odometer",
   "column_break_km",
   "next_due_km",
+  "section_break_desc",
+  "planned_work",
   "event_title"
  ],
  "fields": [
@@ -111,6 +113,16 @@
    "in_list_view": 1,
    "label": "Próximo Odómetro Agendado",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_desc",
+   "fieldtype": "Section Break",
+   "label": "Descrição"
+  },
+  {
+   "fieldname": "planned_work",
+   "fieldtype": "Small Text",
+   "label": "Trabalho Planeado"
   },
   {
    "fieldname": "event_title",
