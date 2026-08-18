@@ -1,0 +1,1 @@
+entre_fleet.patches.seed_fleet_vehicle_types

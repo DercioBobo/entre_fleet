@@ -199,6 +199,15 @@
 	color: var(--tb-navy-900);
 }
 
+.trip-card-type {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--tb-gray-500);
+	margin-top: -6px;
+}
+
 /* Stepper */
 .trip-stepper {
 	display: flex;

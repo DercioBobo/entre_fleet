@@ -1,15 +1,14 @@
 {
  "actions": [],
  "allow_rename": 0,
- "autoname": "field:license_plate",
  "creation": "2026-08-05 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "vehicle_type",
   "license_plate",
-  "status",
   "column_break_details",
-  "assigned_driver",
+  "status",
   "section_break_vehicle",
   "brand",
   "model",
@@ -40,6 +39,15 @@
  ],
  "fields": [
   {
+   "fieldname": "vehicle_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Tipo de Viatura",
+   "options": "Fleet Vehicle Type",
+   "reqd": 1
+  },
+  {
    "fieldname": "license_plate",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -49,6 +57,10 @@
    "unique": 1
   },
   {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "Activo",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -56,18 +68,6 @@
    "in_standard_filter": 1,
    "label": "Estado",
    "options": "Activo\nEm Manutenção\nInactivo\nAbatido"
-  },
-  {
-   "fieldname": "column_break_details",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "assigned_driver",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Condutor Atribuído",
-   "options": "Fleet Driver",
-   "read_only": 1
   },
   {
    "fieldname": "section_break_vehicle",
@@ -208,12 +208,28 @@
  ],
  "image_field": "photo",
  "index_web_pages_for_search": 1,
- "links": [],
+ "links": [
+  {
+   "group": "Manutenção",
+   "link_doctype": "Fleet Maintenance Schedule",
+   "link_fieldname": "vehicle"
+  },
+  {
+   "group": "Manutenção",
+   "link_doctype": "Fleet Maintenance Request",
+   "link_fieldname": "vehicle"
+  },
+  {
+   "group": "Manutenção",
+   "link_doctype": "Fleet Job Card",
+   "link_fieldname": "vehicle"
+  }
+ ],
  "modified": "2026-08-05 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Entre Fleet",
  "name": "Fleet Vehicle",
- "naming_rule": "By fieldname",
+ "naming_rule": "By script",
  "owner": "Administrator",
  "permissions": [
   {

@@ -115,7 +115,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		const filtered = !term
 			? vehicles
 			: vehicles.filter((v) =>
-					[v.license_plate, v.brand, v.model, v.assigned_driver_name]
+					[v.license_plate, v.brand, v.model, v.vehicle_type]
 						.filter(Boolean)
 						.some((field) => field.toLowerCase().includes(term))
 			  );
@@ -144,9 +144,6 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		const alertDot = alert ? `<span class="dossier-card-alert dossier-card-alert-${alert}"></span>` : "";
 		const title =
 			[vehicle.brand, vehicle.model, vehicle.year].filter(Boolean).join(" ") || __("Sem identificação");
-		const driverLabel = vehicle.assigned_driver
-			? this.text(vehicle.assigned_driver_name || vehicle.assigned_driver)
-			: __("Sem condutor");
 
 		return `
 			<a
@@ -159,7 +156,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				<div class="dossier-card-title">${this.text(title)}</div>
 				${this.badge(vehicle.status || __("Sem Estado"), STATUS_COLOR[vehicle.status] || "gray")}
 				<div class="dossier-card-meta">${this.text(vehicle.category || "—")} · ${this.text(vehicle.fuel_type || "—")}</div>
-				<div class="dossier-card-meta">${driverLabel}</div>
+				<div class="dossier-card-meta">${this.text(vehicle.vehicle_type || "—")}</div>
 			</a>
 		`;
 	}
@@ -237,15 +234,13 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 						${this.badge(vehicle.status || __("Sem Estado"), STATUS_COLOR[vehicle.status] || "gray")}
 					</h2>
 					<div class="dossier-meta-line">
+						<strong>${__("Tipo de Viatura")}:</strong> ${this.text(vehicle.vehicle_type || "—")}
+						&nbsp;·&nbsp;
 						<strong>${__("Categoria")}:</strong> ${this.text(vehicle.category || "—")}
 						&nbsp;·&nbsp;
 						<strong>${__("Combustível")}:</strong> ${this.text(vehicle.fuel_type || "—")}
 						&nbsp;·&nbsp;
 						<strong>${__("Odómetro")}:</strong> ${this.text(vehicle.current_odometer || 0)} km
-					</div>
-					<div class="dossier-meta-line">
-						<strong>${__("Condutor Atribuído")}:</strong>
-						${vehicle.assigned_driver ? this.link("Fleet Driver", vehicle.assigned_driver) : "—"}
 					</div>
 					<div class="dossier-meta-line">
 						<strong>${__("Próxima Manutenção")}:</strong> ${nextMaintenance}

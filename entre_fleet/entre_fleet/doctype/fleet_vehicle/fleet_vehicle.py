@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from frappe.utils import add_days, getdate, today
 
 EXPIRY_FIELDS = (
@@ -12,6 +13,16 @@ WARN_WITHIN_DAYS = 30
 
 
 class FleetVehicle(Document):
+	def autoname(self):
+		if not self.vehicle_type:
+			frappe.throw(_("Selecione o Tipo de Viatura para gerar o código da viatura."))
+
+		code = frappe.db.get_value("Fleet Vehicle Type", self.vehicle_type, "code")
+		if not code:
+			frappe.throw(_("O Tipo de Viatura {0} não tem um código definido.").format(self.vehicle_type))
+
+		self.name = make_autoname(f"{code}.###")
+
 	def validate(self):
 		self.warn_on_expiring_documents()
 		self.sync_tyre_positions()

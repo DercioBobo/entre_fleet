@@ -101,7 +101,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				<input
 					type="text"
 					class="trip-board-search"
-					placeholder="${this.text(__("Pesquisar por matrícula, marca, modelo ou condutor..."))}"
+					placeholder="${this.text(__("Pesquisar por matrícula, tipo, marca, modelo ou condutor..."))}"
 					value="${this.text(this.search_term)}"
 				/>
 				<div class="trip-filter-chips">${chips}</div>
@@ -141,9 +141,9 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 
 			return [
 				v.license_plate,
+				v.vehicle_type,
 				v.brand,
 				v.model,
-				v.assigned_driver_name,
 				v.open_trip && v.open_trip.driver_name,
 			]
 				.filter(Boolean)
@@ -178,6 +178,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					<span class="trip-card-status trip-card-status-${state}">${FTB_STATUS_LABEL[state]}</span>
 				</div>
 				<div class="trip-card-title">${this.text(title)}</div>
+				<div class="trip-card-type">${this.text(vehicle.vehicle_type || "—")}</div>
 				${this.render_stepper(state)}
 				${this.render_card_body(vehicle, state)}
 			</div>
@@ -230,9 +231,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		if (state === "available") {
 			return `
 				<div class="trip-card-details">
-					<div class="trip-card-detail"><strong>${__("Condutor Atribuído")}:</strong> ${this.text(
-						vehicle.assigned_driver_name || vehicle.assigned_driver || "—"
-					)}</div>
 					<div class="trip-card-detail"><strong>${__("Odómetro Actual")}:</strong> ${this.text(vehicle.current_odometer || 0)} km</div>
 				</div>
 				<button class="btn btn-sm btn-default trip-card-btn" data-action="saida" data-vehicle="${this.text(
@@ -282,7 +280,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					options: "Fleet Driver",
 					label: __("Condutor"),
 					reqd: 1,
-					default: vehicle.assigned_driver,
 				},
 				{
 					fieldname: "departure_datetime",
