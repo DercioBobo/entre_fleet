@@ -21,3 +21,23 @@ def recompute_current_odometer(vehicle):
 	)[0][0] or 0
 
 	frappe.db.set_value("Fleet Vehicle", vehicle, "current_odometer", max(trip_max, fuel_max))
+
+
+def get_latest_fuel_price(fuel_type):
+	"""Most recent price_per_litre paid for this fuel_type, fleet-wide —
+	used to estimate a trip's fuel cost without asking anyone to type a
+	price in twice. Sourced from real (submitted) Fleet Fuel Log purchases,
+	not vehicle-specific since fuel price tracks the market, not the truck."""
+	if not fuel_type:
+		return None
+
+	row = frappe.db.sql(
+		"""select fl.price_per_litre
+		from `tabFleet Fuel Log` fl
+		inner join `tabFleet Vehicle` v on v.name = fl.vehicle
+		where v.fuel_type = %s and fl.docstatus = 1
+		order by fl.creation desc
+		limit 1""",
+		fuel_type,
+	)
+	return row[0][0] if row else None

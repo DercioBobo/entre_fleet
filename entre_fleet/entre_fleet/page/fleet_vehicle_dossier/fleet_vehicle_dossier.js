@@ -27,6 +27,8 @@ const STATUS_COLOR = {
 	Suspenso: "red",
 	Conforme: "green",
 	"Não Conforme": "red",
+	"No Prazo": "green",
+	Atrasado: "red",
 };
 
 entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
@@ -440,9 +442,38 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 							? this.text(r.odometer_end - r.odometer_start)
 							: "—",
 				},
-				{ label: __("Combustível Usado"), render: (r) => (r.fuel_used ? `${this.text(r.fuel_used)} L` : "—") },
-				{ label: __("Rota"), render: (r) => this.text(r.route) },
+				{
+					label: __("Combustível Estimado"),
+					render: (r) =>
+						r.estimated_fuel_used
+							? `${this.text(Math.round(r.estimated_fuel_used * 100) / 100)} L (${this.currency(r.estimated_fuel_cost)})`
+							: "—",
+				},
+				{
+					label: __("Cliente / Rota"),
+					render: (r) =>
+						r.trip_type === "Serviço a Cliente"
+							? `${this.link("Fleet Service Order", r.service_order, r.customer_name || r.customer)} ${
+									r.service_reference ? `<br><span class="dossier-meta-line">${this.text(r.service_reference)}</span>` : ""
+							  }`
+							: this.text(r.route),
+				},
 				{ label: __("Carga"), render: (r) => this.text(r.cargo) },
+				{
+					label: __("Destinos"),
+					render: (r) =>
+						(r.destinations || [])
+							.map(
+								(d) =>
+									`${this.badge(d.destination, STATUS_COLOR[d.status] || "gray")}`
+							)
+							.join(" ") || "—",
+				},
+				{
+					label: __("Conformidade"),
+					render: (r) =>
+						r.service_conformity ? this.badge(r.service_conformity, STATUS_COLOR[r.service_conformity] || "gray") : "—",
+				},
 				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
 			],
 			trips,

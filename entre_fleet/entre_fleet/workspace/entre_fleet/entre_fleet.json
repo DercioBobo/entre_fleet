@@ -95,6 +95,17 @@
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Fleet Service Order",
+   "link_count": 0,
+   "link_to": "Fleet Service Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Fleet Fuel Log",
    "link_count": 0,
    "link_to": "Fleet Fuel Log",

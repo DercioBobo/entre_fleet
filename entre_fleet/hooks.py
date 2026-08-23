@@ -7,7 +7,9 @@ app_license = "MIT"
 
 # Apps
 # ------------------
-required_apps = []
+# erpnext: Fleet Service Order links its "customer" field to ERPNext's own
+# Customer doctype rather than duplicating a client list inside this app.
+required_apps = ["erpnext"]
 
 # Includes in <head>
 # ------------------

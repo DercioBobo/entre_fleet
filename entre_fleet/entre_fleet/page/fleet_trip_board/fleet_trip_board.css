@@ -197,6 +197,20 @@
 	font-size: 14px;
 	font-weight: 700;
 	color: var(--tb-navy-900);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.trip-card-service-badge {
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+	color: #fff;
+	background: var(--tb-navy-700);
+	border-radius: 999px;
+	padding: 2px 8px;
 }
 
 .trip-card-type {
@@ -315,6 +329,83 @@
 .trip-card-btn {
 	margin-top: auto;
 	align-self: flex-start;
+}
+
+/* Destinations (client service trips) */
+.trip-card-destinations {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px 0;
+	border-top: 1px dashed var(--tb-gray-200);
+	border-bottom: 1px dashed var(--tb-gray-200);
+}
+
+.trip-dest-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+	font-size: 11px;
+}
+
+.trip-dest-name {
+	font-weight: 700;
+	color: var(--tb-navy-900);
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.trip-dest-eta {
+	color: var(--tb-gray-600);
+}
+
+.trip-dest-status {
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	padding: 2px 7px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.trip-dest-status-pending {
+	background: var(--tb-gray-200);
+	color: var(--tb-gray-600);
+}
+
+.trip-dest-status-ontime {
+	background: var(--tb-teal-100);
+	color: var(--tb-teal-500);
+}
+
+.trip-dest-status-late {
+	background: var(--tb-red-500);
+	color: #fff;
+}
+
+.trip-dest-done {
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--tb-teal-500);
+}
+
+.trip-dest-btn {
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--tb-teal-500);
+	background: transparent;
+	border: 1px solid var(--tb-teal-500);
+	border-radius: 999px;
+	padding: 2px 9px;
+	cursor: pointer;
+	transition: background 0.12s ease, color 0.12s ease;
+}
+
+.trip-dest-btn:hover {
+	background: var(--tb-teal-500);
+	color: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {

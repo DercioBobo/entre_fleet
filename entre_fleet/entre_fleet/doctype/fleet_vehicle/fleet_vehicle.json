@@ -16,6 +16,8 @@
   "category",
   "column_break_vehicle",
   "fuel_type",
+  "load_capacity",
+  "avg_consumption",
   "current_odometer",
   "chassis_number",
   "engine_number",
@@ -105,6 +107,19 @@
    "fieldtype": "Select",
    "label": "Tipo de Combustível",
    "options": "Gasolina\nGasóleo\nEléctrico\nHíbrido\nGás"
+  },
+  {
+   "fieldname": "load_capacity",
+   "fieldtype": "Float",
+   "label": "Capacidade de Carga (Toneladas)",
+   "precision": "2"
+  },
+  {
+   "description": "Usado para estimar o combustível e custo de cada viagem a partir da distância percorrida — sem esta informação a viagem não mostra estimativa.",
+   "fieldname": "avg_consumption",
+   "fieldtype": "Float",
+   "label": "Consumo Médio (Km/L)",
+   "precision": "2"
   },
   {
    "fieldname": "current_odometer",

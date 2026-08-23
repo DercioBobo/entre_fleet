@@ -79,8 +79,16 @@ def get_trip_board():
 			"odometer_start",
 			"route",
 			"cargo",
+			"trip_type",
+			"service_order",
+			"service_order.customer as customer",
+			"service_order.service_reference as service_reference",
+			"loading_location",
+			"loading_date",
 		],
 	)
+	attach_destinations(open_trips)
+	attach_customer_names(open_trips)
 	open_trip_by_vehicle = {t.vehicle: t for t in open_trips}
 
 	for vehicle in vehicles:
@@ -97,8 +105,58 @@ def get_trip_board():
 	return {"vehicles": vehicles, "drivers": drivers}
 
 
+def attach_destinations(trips):
+	"""Bulk-fetch Fleet Trip Destination child rows for a list of trip dicts
+	(each needs a "name") and attach them as trip["destinations"] — avoids
+	an N+1 query per open trip on the board/dossier."""
+	if not trips:
+		return
+
+	rows = frappe.get_all(
+		"Fleet Trip Destination",
+		filters={"parent": ["in", [t.name for t in trips]]},
+		fields=["parent", "destination", "eta", "actual_delivery_date", "status", "remarks", "name"],
+		order_by="parent asc, idx asc",
+	)
+	by_parent = {}
+	for row in rows:
+		by_parent.setdefault(row.parent, []).append(row)
+
+	for trip in trips:
+		trip["destinations"] = by_parent.get(trip.name, [])
+
+
+def attach_customer_names(trips):
+	"""Fleet Trip Log -> Fleet Service Order -> Customer is two hops, so
+	frappe.get_all's dotted fetch (one hop only) can't reach customer_name
+	directly — resolve it here in a single bulk query instead."""
+	customers = {t.customer for t in trips if t.get("customer")}
+	if not customers:
+		return
+
+	names = frappe.get_all(
+		"Customer", filters={"name": ["in", list(customers)]}, fields=["name", "customer_name"]
+	)
+	name_map = {c.name: c.customer_name for c in names}
+	for trip in trips:
+		if trip.get("customer"):
+			trip["customer_name"] = name_map.get(trip["customer"], trip["customer"])
+
+
 @frappe.whitelist()
-def start_trip(vehicle, driver, odometer_start, departure_datetime=None, route=None, cargo=None):
+def start_trip(
+	vehicle,
+	driver,
+	odometer_start,
+	departure_datetime=None,
+	route=None,
+	cargo=None,
+	trip_type="Interno",
+	service_order=None,
+	loading_location=None,
+	loading_date=None,
+	destinations=None,
+):
 	if not frappe.has_permission("Fleet Trip Log", "create"):
 		frappe.throw(_("Não tem permissão para registar viagens."), frappe.PermissionError)
 
@@ -107,22 +165,46 @@ def start_trip(vehicle, driver, odometer_start, departure_datetime=None, route=N
 	trip.driver = driver
 	trip.odometer_start = frappe.utils.flt(odometer_start)
 	trip.departure_datetime = departure_datetime or frappe.utils.now_datetime()
-	trip.route = route
+	trip.trip_type = trip_type or "Interno"
 	trip.cargo = cargo
+
+	if trip.trip_type == "Serviço a Cliente":
+		trip.service_order = service_order
+		trip.loading_location = loading_location
+		trip.loading_date = loading_date
+		for row in frappe.parse_json(destinations) or []:
+			if row.get("destination"):
+				trip.append("destinations", {"destination": row.get("destination"), "eta": row.get("eta")})
+	else:
+		trip.route = route
+
 	trip.insert()
 	return trip.name
 
 
 @frappe.whitelist()
-def end_trip(trip_log, arrival_datetime, odometer_end, fuel_used=None, route=None, cargo=None):
+def mark_trip_destination_delivered(trip_log, destination_row, actual_delivery_date=None):
+	if not frappe.has_permission("Fleet Trip Log", "write", trip_log):
+		frappe.throw(_("Não tem permissão para actualizar esta viagem."), frappe.PermissionError)
+
+	trip = frappe.get_doc("Fleet Trip Log", trip_log)
+	row = next((r for r in trip.destinations if r.name == destination_row), None)
+	if not row:
+		frappe.throw(_("Destino não encontrado nesta viagem."))
+
+	row.actual_delivery_date = actual_delivery_date or frappe.utils.today()
+	trip.save()
+	return trip.name
+
+
+@frappe.whitelist()
+def end_trip(trip_log, arrival_datetime, odometer_end, route=None, cargo=None):
 	if not frappe.has_permission("Fleet Trip Log", "submit"):
 		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
 
 	trip = frappe.get_doc("Fleet Trip Log", trip_log)
 	trip.arrival_datetime = arrival_datetime
 	trip.odometer_end = frappe.utils.flt(odometer_end)
-	if fuel_used:
-		trip.fuel_used = frappe.utils.flt(fuel_used)
 	if route:
 		trip.route = route
 	if cargo:
@@ -352,12 +434,20 @@ def get_vehicle_dossier(vehicle):
 			"arrival_datetime",
 			"route",
 			"cargo",
-			"fuel_used",
+			"estimated_fuel_used",
+			"estimated_fuel_cost",
 			"docstatus",
+			"trip_type",
+			"service_order",
+			"service_order.customer as customer",
+			"service_order.service_reference as service_reference",
+			"service_conformity",
 		],
 		order_by="departure_datetime desc, `tabFleet Trip Log`.creation desc",
 		limit_page_length=HISTORY_LIMIT,
 	)
+	attach_destinations(trips)
+	attach_customer_names(trips)
 
 	fuel_logs = frappe.get_all(
 		"Fleet Fuel Log",

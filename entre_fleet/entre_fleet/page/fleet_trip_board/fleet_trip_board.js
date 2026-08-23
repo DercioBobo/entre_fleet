@@ -23,6 +23,12 @@ const FTB_FILTERS = [
 	["unavailable", __("Indisponíveis")],
 ];
 
+const FTB_DEST_STATUS_CLASS = {
+	Pendente: "pending",
+	"No Prazo": "ontime",
+	Atrasado: "late",
+};
+
 entre_fleet.FleetTripBoard = class FleetTripBoard {
 	constructor(wrapper) {
 		this.wrapper = wrapper;
@@ -126,6 +132,10 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		$grid.find("[data-action='chegada']").on("click", (e) => {
 			this.open_chegada_dialog(this.vehicle_by_name($(e.currentTarget).attr("data-vehicle")));
 		});
+		$grid.find("[data-action='entrega']").on("click", (e) => {
+			const $btn = $(e.currentTarget);
+			this.open_entrega_dialog(this.vehicle_by_name($btn.attr("data-vehicle")), $btn.attr("data-row"));
+		});
 
 		this.update_timers();
 	}
@@ -170,6 +180,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 	render_card(vehicle) {
 		const state = this.card_state(vehicle);
 		const title = [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || __("Sem identificação");
+		const isService = state === "on_trip" && vehicle.open_trip.trip_type === "Serviço a Cliente";
 
 		return `
 			<div class="trip-card trip-card-${state}">
@@ -177,7 +188,10 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					<span class="trip-card-plate">${this.text(vehicle.license_plate || "—")}</span>
 					<span class="trip-card-status trip-card-status-${state}">${FTB_STATUS_LABEL[state]}</span>
 				</div>
-				<div class="trip-card-title">${this.text(title)}</div>
+				<div class="trip-card-title">
+					${this.text(title)}
+					${isService ? `<span class="trip-card-service-badge">${__("Serviço")}</span>` : ""}
+				</div>
 				<div class="trip-card-type">${this.text(vehicle.vehicle_type || "—")}</div>
 				${this.render_stepper(state)}
 				${this.render_card_body(vehicle, state)}
@@ -212,17 +226,28 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 	render_card_body(vehicle, state) {
 		if (state === "on_trip") {
 			const trip = vehicle.open_trip;
+			const isService = trip.trip_type === "Serviço a Cliente";
+
 			return `
 				<div class="trip-card-details">
 					<div class="trip-card-detail"><strong>${__("Condutor")}:</strong> ${this.text(
 						trip.driver_name || trip.driver || "—"
 					)}</div>
+					${
+						isService
+							? `<div class="trip-card-detail"><strong>${__("Cliente")}:</strong> ${this.text(
+									trip.customer_name || trip.customer || "—"
+							  )}</div>
+							<div class="trip-card-detail"><strong>${__("Referência")}:</strong> ${this.text(trip.service_reference || "—")}</div>`
+							: ""
+					}
 					<div class="trip-card-detail"><strong>${__("Saída")}:</strong> ${this.datetime(trip.departure_datetime)}</div>
 					<div class="trip-card-detail"><strong>${__("Odómetro Inicial")}:</strong> ${this.text(trip.odometer_start)} km</div>
-					${trip.route ? `<div class="trip-card-detail"><strong>${__("Rota")}:</strong> ${this.text(trip.route)}</div>` : ""}
+					${!isService && trip.route ? `<div class="trip-card-detail"><strong>${__("Rota")}:</strong> ${this.text(trip.route)}</div>` : ""}
 					${trip.cargo ? `<div class="trip-card-detail"><strong>${__("Carga")}:</strong> ${this.text(trip.cargo)}</div>` : ""}
 					<div class="trip-card-elapsed" data-departure="${trip.departure_datetime}">—</div>
 				</div>
+				${isService ? this.render_destinations(vehicle, trip) : ""}
 				<button class="btn btn-sm btn-primary trip-card-btn" data-action="chegada" data-vehicle="${this.text(
 					vehicle.name
 				)}">${__("Registar Chegada")}</button>
@@ -245,6 +270,33 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				<div class="trip-card-detail trip-card-detail-muted">${this.text(vehicle.status)}</div>
 			</div>
 		`;
+	}
+
+	render_destinations(vehicle, trip) {
+		const destinations = trip.destinations || [];
+		if (!destinations.length) return "";
+
+		const rows = destinations
+			.map((d) => {
+				const statusClass = FTB_DEST_STATUS_CLASS[d.status] || "pending";
+				return `
+					<div class="trip-dest-row trip-dest-${statusClass}">
+						<span class="trip-dest-name">${this.text(d.destination)}</span>
+						<span class="trip-dest-eta">${d.eta ? this.date(d.eta) : "—"}</span>
+						<span class="trip-dest-status trip-dest-status-${statusClass}">${this.text(d.status || "Pendente")}</span>
+						${
+							d.actual_delivery_date
+								? `<span class="trip-dest-done">${this.date(d.actual_delivery_date)}</span>`
+								: `<button type="button" class="trip-dest-btn" data-action="entrega" data-vehicle="${this.text(
+										vehicle.name
+								  )}" data-row="${this.text(d.name)}">${__("Registar Entrega")}</button>`
+						}
+					</div>
+				`;
+			})
+			.join("");
+
+		return `<div class="trip-card-destinations">${rows}</div>`;
 	}
 
 	update_timers() {
@@ -276,7 +328,21 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 	open_saida_dialog(vehicle) {
 		if (!vehicle) return;
 
-		const fields = [
+		const canServeClient = this.requires_cargo(vehicle);
+		const fields = [];
+
+		if (canServeClient) {
+			fields.push({
+				fieldname: "trip_type",
+				fieldtype: "Select",
+				label: __("Tipo de Viagem"),
+				options: "Interno\nServiço a Cliente",
+				default: "Interno",
+				reqd: 1,
+			});
+		}
+
+		fields.push(
 			{
 				fieldname: "driver",
 				fieldtype: "Link",
@@ -297,15 +363,56 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				label: __("Odómetro Inicial (km)"),
 				reqd: 1,
 				default: vehicle.current_odometer || 0,
-			},
-			{
+			}
+		);
+
+		if (canServeClient) {
+			fields.push(
+				{
+					fieldname: "route",
+					fieldtype: "Data",
+					label: __("Rota"),
+					depends_on: 'eval:doc.trip_type != "Serviço a Cliente"',
+				},
+				{
+					fieldname: "service_section",
+					fieldtype: "Section Break",
+					label: __("Serviço ao Cliente"),
+					depends_on: 'eval:doc.trip_type == "Serviço a Cliente"',
+				},
+				{
+					fieldname: "service_order",
+					fieldtype: "Link",
+					options: "Fleet Service Order",
+					label: __("Pedido de Serviço"),
+				},
+				{
+					fieldname: "loading_location",
+					fieldtype: "Data",
+					label: __("Local de Carregamento"),
+				},
+				{
+					fieldname: "loading_date",
+					fieldtype: "Date",
+					label: __("Data de Carregamento"),
+					default: frappe.datetime.get_today(),
+				},
+				{
+					fieldname: "destinations",
+					fieldtype: "Table",
+					label: __("Destinos"),
+					options: "Fleet Trip Destination",
+				}
+			);
+		} else {
+			fields.push({
 				fieldname: "route",
 				fieldtype: "Data",
 				label: __("Rota"),
-			},
-		];
+			});
+		}
 
-		if (this.requires_cargo(vehicle)) {
+		if (canServeClient) {
 			fields.push({
 				fieldname: "cargo",
 				fieldtype: "Data",
@@ -319,6 +426,16 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			fields,
 			primary_action_label: __("Confirmar Saída"),
 			primary_action: (values) => {
+				if (values.trip_type === "Serviço a Cliente") {
+					if (!values.service_order) {
+						frappe.msgprint(__("Indique o Pedido de Serviço."));
+						return;
+					}
+					if (!values.destinations || !values.destinations.length) {
+						frappe.msgprint(__("Adicione pelo menos um destino."));
+						return;
+					}
+				}
 				dialog.hide();
 				frappe.call({
 					method: "entre_fleet.entre_fleet.api.start_trip",
@@ -327,6 +444,43 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					freeze_message: __("A registar saída..."),
 				}).then(() => {
 					frappe.show_alert({ message: __("Saída registada."), indicator: "green" });
+					this.load_data();
+				});
+			},
+		});
+		dialog.show();
+	}
+
+	open_entrega_dialog(vehicle, destinationRow) {
+		if (!vehicle || !vehicle.open_trip) return;
+		const destination = (vehicle.open_trip.destinations || []).find((d) => d.name === destinationRow);
+
+		const dialog = new frappe.ui.Dialog({
+			title: `${__("Registar Entrega")} — ${destination ? destination.destination : ""}`,
+			fields: [
+				{
+					fieldname: "actual_delivery_date",
+					fieldtype: "Date",
+					label: __("Data de Entrega"),
+					reqd: 1,
+					default: frappe.datetime.get_today(),
+					description: destination && destination.eta ? __("Previsão: {0}", [this.date(destination.eta)]) : "",
+				},
+			],
+			primary_action_label: __("Confirmar Entrega"),
+			primary_action: (values) => {
+				dialog.hide();
+				frappe.call({
+					method: "entre_fleet.entre_fleet.api.mark_trip_destination_delivered",
+					args: {
+						trip_log: vehicle.open_trip.name,
+						destination_row: destinationRow,
+						actual_delivery_date: values.actual_delivery_date,
+					},
+					freeze: true,
+					freeze_message: __("A registar entrega..."),
+				}).then(() => {
+					frappe.show_alert({ message: __("Entrega registada."), indicator: "green" });
 					this.load_data();
 				});
 			},
@@ -352,11 +506,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				label: __("Odómetro Final (km)"),
 				reqd: 1,
 				description: __("Odómetro inicial: {0} km", [trip.odometer_start]),
-			},
-			{
-				fieldname: "fuel_used",
-				fieldtype: "Float",
-				label: __("Combustível Usado (L)"),
 			},
 			{
 				fieldname: "route",
@@ -407,6 +556,10 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 	}
 
 	datetime(value) {
+		return value ? frappe.datetime.str_to_user(value) : "—";
+	}
+
+	date(value) {
 		return value ? frappe.datetime.str_to_user(value) : "—";
 	}
 };

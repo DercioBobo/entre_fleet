@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-23 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "destination",
+  "eta",
+  "actual_delivery_date",
+  "status",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "destination",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Destino",
+   "reqd": 1
+  },
+  {
+   "fieldname": "eta",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Previsão de Entrega"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "actual_delivery_date",
+   "fieldtype": "Date",
+   "label": "Data de Entrega"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Pendente",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "Pendente\nNo Prazo\nAtrasado",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Observações"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-23 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Entre Fleet",
+ "name": "Fleet Trip Destination",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
