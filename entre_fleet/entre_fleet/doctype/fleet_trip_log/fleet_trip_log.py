@@ -12,8 +12,24 @@ class FleetTripLog(Document):
 			frappe.throw(_("Odómetro Final deve ser maior que o Odómetro Inicial."))
 		self.check_single_open_trip()
 		self.validate_service_trip()
+		self.validate_destination_dates()
 		self.compute_service_conformity()
 		self.compute_fuel_estimate()
+
+	def validate_destination_dates(self):
+		"""A destination can't have been delivered before the truck even left —
+		catches both the Registar Entrega flow and a direct edit of the
+		destinations grid on the form, since validate() runs either way."""
+		if not self.departure_datetime:
+			return
+		departure = getdate(self.departure_datetime)
+		for row in self.get("destinations") or []:
+			if row.actual_delivery_date and getdate(row.actual_delivery_date) < departure:
+				frappe.throw(
+					_("A Data de Entrega de '{0}' não pode ser anterior à Data de Saída ({1}).").format(
+						row.destination, frappe.utils.formatdate(departure)
+					)
+				)
 
 	def validate_service_trip(self):
 		"""A service trip must be tied back to the client's order (one

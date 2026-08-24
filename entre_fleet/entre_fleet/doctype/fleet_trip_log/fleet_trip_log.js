@@ -52,7 +52,6 @@ frappe.ui.form.on("Fleet Trip Log", {
 
 function open_chegada_dialog(frm) {
 	const isService = frm.doc.trip_type === "Serviço a Cliente";
-	const needsCargo = frm.doc.vehicle_type && frm.doc.vehicle_type !== "Administrativo";
 
 	if (isService) {
 		const pending = (frm.doc.destinations || []).filter((d) => !d.actual_delivery_date);
@@ -83,16 +82,8 @@ function open_chegada_dialog(frm) {
 		},
 	];
 
-	if (needsCargo) {
-		fields.push({
-			fieldname: "cargo",
-			fieldtype: "Data",
-			label: __("Carga"),
-			reqd: 1,
-			default: frm.doc.cargo,
-		});
-	}
-
+	// Carga was already declared at Saída — no need to ask again on the way
+	// back in.
 	fields.push({
 		fieldname: "remarks",
 		fieldtype: "Small Text",

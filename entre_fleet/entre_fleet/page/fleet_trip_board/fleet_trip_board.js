@@ -714,6 +714,14 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			],
 			primary_action_label: __("Confirmar Entrega"),
 			primary_action: (values) => {
+				if (values.actual_delivery_date < vehicle.open_trip.departure_datetime) {
+					frappe.msgprint(
+						__("A Data de Entrega não pode ser anterior à Data de Saída ({0}).", [
+							this.date(vehicle.open_trip.departure_datetime),
+						])
+					);
+					return;
+				}
 				dialog.hide();
 				frappe.call({
 					method: "entre_fleet.entre_fleet.api.mark_trip_destination_delivered",
@@ -767,16 +775,8 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			},
 		];
 
-		if (this.requires_cargo(vehicle)) {
-			fields.push({
-				fieldname: "cargo",
-				fieldtype: "Data",
-				label: __("Carga"),
-				reqd: 1,
-				default: trip.cargo,
-			});
-		}
-
+		// Carga was already declared at Saída — no need to ask again on the
+		// way back in.
 		fields.push({
 			fieldname: "remarks",
 			fieldtype: "Small Text",

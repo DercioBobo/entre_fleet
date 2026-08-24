@@ -605,6 +605,14 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 					},
 				],
 				(values) => {
+					if (values.actual_delivery_date < trip.departure_datetime) {
+						frappe.msgprint(
+							__("A Data de Entrega não pode ser anterior à Data de Saída ({0}).", [
+								this.date(trip.departure_datetime),
+							])
+						);
+						return;
+					}
 					frappe.call({
 						method: "entre_fleet.entre_fleet.api.mark_trip_destination_delivered",
 						args: {
