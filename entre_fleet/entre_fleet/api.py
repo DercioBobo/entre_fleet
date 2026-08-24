@@ -680,7 +680,7 @@ def get_service_report(search=None, status=None):
 			"status",
 			"remarks",
 		],
-		order_by="order_date desc, creation desc",
+		order_by="order_date desc, `tabFleet Service Order`.creation desc",
 		limit_page_length=0,
 	)
 
@@ -721,7 +721,7 @@ def get_service_report(search=None, status=None):
 			"remarks",
 			"docstatus",
 		],
-		order_by="departure_datetime asc, creation asc",
+		order_by="departure_datetime asc, `tabFleet Trip Log`.creation asc",
 	)
 	attach_destinations(trips)
 
