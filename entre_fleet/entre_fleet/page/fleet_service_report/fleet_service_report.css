@@ -96,6 +96,99 @@
 	color: #fff;
 }
 
+.fsr-month-select,
+.fsr-year-select {
+	padding: 8px 10px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--fsr-navy-900);
+	background: #fff;
+	border: 1px solid var(--fsr-gray-200);
+	border-radius: 8px;
+	outline: none;
+	cursor: pointer;
+}
+
+.fsr-month-select:focus,
+.fsr-year-select:focus {
+	border-color: var(--fsr-teal-500);
+}
+
+.fsr-view-toggle {
+	display: inline-flex;
+	background: var(--fsr-sand-50);
+	border: 1px solid var(--fsr-gray-200);
+	border-radius: 999px;
+	padding: 3px;
+	gap: 2px;
+	margin-left: auto;
+}
+
+.fsr-view-btn {
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--fsr-gray-600);
+	padding: 6px 14px;
+	border-radius: 999px;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fsr-view-btn:hover {
+	color: var(--fsr-navy-900);
+}
+
+.fsr-view-btn.active {
+	background: var(--fsr-navy-700);
+	color: #fff;
+}
+
+/* Table view */
+.fsr-table-wrap {
+	overflow-x: auto;
+	background: #fff;
+	border: 1px solid var(--fsr-gray-200);
+	border-radius: 10px;
+}
+
+table.fsr-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+}
+
+table.fsr-table th {
+	position: sticky;
+	top: 0;
+	text-align: left;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--fsr-gray-600);
+	background: #fff;
+	border-bottom: 1px solid var(--fsr-gray-200);
+	padding: 10px 12px;
+	white-space: nowrap;
+}
+
+table.fsr-table td {
+	padding: 9px 12px;
+	border-bottom: 1px solid var(--fsr-gray-200);
+	color: var(--fsr-navy-900);
+	white-space: nowrap;
+}
+
+table.fsr-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+table.fsr-table tbody tr:hover {
+	background: var(--fsr-teal-100);
+}
+
 /* Order (Pedido de Serviço) card */
 .fsr-list {
 	display: flex;

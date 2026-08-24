@@ -30,6 +30,21 @@ const FSR_DEST_STATUS_CLASS = {
 	Atrasado: "late",
 };
 
+const FSR_MONTHS = [
+	["01", __("Janeiro")],
+	["02", __("Fevereiro")],
+	["03", __("Março")],
+	["04", __("Abril")],
+	["05", __("Maio")],
+	["06", __("Junho")],
+	["07", __("Julho")],
+	["08", __("Agosto")],
+	["09", __("Setembro")],
+	["10", __("Outubro")],
+	["11", __("Novembro")],
+	["12", __("Dezembro")],
+];
+
 entre_fleet.FleetServiceReport = class FleetServiceReport {
 	constructor(wrapper) {
 		this.wrapper = wrapper;
@@ -42,7 +57,10 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 
 		this.$container = $('<div class="fsr-report">').appendTo(this.page.body);
 		this.filter_status = "all";
+		this.filter_month = "all";
+		this.filter_year = "all";
 		this.search_term = "";
+		this.view_mode = "cards";
 		this.load_data();
 	}
 
@@ -74,6 +92,23 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 			this.render_list();
 		});
 
+		this.$container.find(".fsr-month-select").on("change", (e) => {
+			this.filter_month = e.currentTarget.value;
+			this.render_list();
+		});
+
+		this.$container.find(".fsr-year-select").on("change", (e) => {
+			this.filter_year = e.currentTarget.value;
+			this.render_list();
+		});
+
+		this.$container.find("[data-view]").on("click", (e) => {
+			this.view_mode = $(e.currentTarget).attr("data-view");
+			this.$container.find("[data-view]").removeClass("active");
+			$(e.currentTarget).addClass("active");
+			this.render_list();
+		});
+
 		this.render_list();
 	}
 
@@ -95,6 +130,22 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 			`
 		).join("");
 
+		const monthOptions = [`<option value="all">${__("Mês")}</option>`]
+			.concat(
+				FSR_MONTHS.map(
+					([value, label]) =>
+						`<option value="${value}" ${this.filter_month === value ? "selected" : ""}>${label}</option>`
+				)
+			)
+			.join("");
+
+		const years = this.years_from_data();
+		const yearOptions = [`<option value="all">${__("Ano")}</option>`]
+			.concat(
+				years.map((y) => `<option value="${y}" ${this.filter_year === y ? "selected" : ""}>${y}</option>`)
+			)
+			.join("");
+
 		return `
 			<div class="fsr-toolbar">
 				<input
@@ -103,9 +154,27 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 					placeholder="${this.text(__("Pesquisar por cliente, pedido ou referência..."))}"
 					value="${this.text(this.search_term)}"
 				/>
+				<select class="fsr-month-select">${monthOptions}</select>
+				<select class="fsr-year-select">${yearOptions}</select>
 				<div class="fsr-filter-chips">${chips}</div>
+				<div class="fsr-view-toggle">
+					<button type="button" class="fsr-view-btn ${this.view_mode === "cards" ? "active" : ""}" data-view="cards">
+						${__("Cartões")}
+					</button>
+					<button type="button" class="fsr-view-btn ${this.view_mode === "table" ? "active" : ""}" data-view="table">
+						${__("Tabela")}
+					</button>
+				</div>
 			</div>
 		`;
+	}
+
+	years_from_data() {
+		const years = new Set();
+		(this.data || []).forEach((o) => {
+			if (o.order_date) years.add(o.order_date.slice(0, 4));
+		});
+		return Array.from(years).sort().reverse();
 	}
 
 	render_list() {
@@ -117,13 +186,24 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 			return;
 		}
 
-		$list.html(orders.map((o) => this.render_order(o)).join(""));
+		$list.html(
+			this.view_mode === "table"
+				? this.render_table_view(orders)
+				: orders.map((o) => this.render_order(o)).join("")
+		);
 	}
 
 	filtered_sorted_orders() {
 		const term = (this.search_term || "").trim().toLowerCase();
 		return (this.data || []).filter((o) => {
 			if (this.filter_status !== "all" && o.status !== this.filter_status) return false;
+			if (this.filter_year !== "all" || this.filter_month !== "all") {
+				if (!o.order_date) return false;
+				const orderYear = o.order_date.slice(0, 4);
+				const orderMonth = o.order_date.slice(5, 7);
+				if (this.filter_year !== "all" && orderYear !== this.filter_year) return false;
+				if (this.filter_month !== "all" && orderMonth !== this.filter_month) return false;
+			}
 			if (!term) return true;
 			return [o.name, o.customer_name, o.customer, o.service_reference]
 				.filter(Boolean)
@@ -233,6 +313,79 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 			.join("");
 
 		return `<div class="fsr-dest-list">${rows}</div>`;
+	}
+
+	// One row per trip — an order with no trips dispatched yet still gets a
+	// row (fields blank) so it doesn't just disappear from the table.
+	render_table_view(orders) {
+		const rows = [];
+		orders.forEach((order) => {
+			if (!order.trips || !order.trips.length) {
+				rows.push([order, null]);
+			} else {
+				order.trips.forEach((trip) => rows.push([order, trip]));
+			}
+		});
+
+		const columns = [
+			__("Pedido"),
+			__("Cliente"),
+			__("Data do Pedido"),
+			__("Veículo"),
+			__("Tipo"),
+			__("Capacidade"),
+			__("Condutor"),
+			__("Local de Carregamento"),
+			__("Data de Carregamento"),
+			__("Data de Saída"),
+			__("Data de Chegada"),
+			__("Destinos"),
+			__("Conformidade"),
+			__("Estado"),
+		];
+
+		const thead = columns.map((c) => `<th>${this.text(c)}</th>`).join("");
+		const tbody = rows
+			.map(([order, trip]) => {
+				const cells = [
+					this.text(order.name),
+					this.text(order.customer_name || order.customer || "—"),
+					this.date(order.order_date),
+					trip ? this.text(trip.license_plate || trip.vehicle || "—") : "—",
+					trip ? this.text(trip.vehicle_type || "—") : "—",
+					trip && trip.load_capacity ? `${this.text(trip.load_capacity)} t` : "—",
+					trip ? this.text(trip.driver_name || trip.driver || "—") : "—",
+					trip ? this.text(trip.loading_location || "—") : "—",
+					trip ? this.date(trip.loading_date) : "—",
+					trip ? this.date(trip.departure_datetime) : "—",
+					trip ? this.date(trip.arrival_datetime) : "—",
+					this.dest_summary(trip),
+					trip && trip.service_conformity
+						? this.badge(trip.service_conformity, FSR_STATUS_COLOR[trip.service_conformity] || "gray")
+						: "—",
+					trip ? this.docstatus_badge(trip.docstatus) : this.badge(order.status, FSR_STATUS_COLOR[order.status] || "gray"),
+				];
+				return `<tr>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>`;
+			})
+			.join("");
+
+		return `
+			<div class="fsr-table-wrap">
+				<table class="fsr-table">
+					<thead><tr>${thead}</tr></thead>
+					<tbody>${tbody}</tbody>
+				</table>
+			</div>
+		`;
+	}
+
+	dest_summary(trip) {
+		const destinations = (trip && trip.destinations) || [];
+		if (!destinations.length) return "—";
+		const late = destinations.filter((d) => d.status === "Atrasado").length;
+		return late
+			? `${destinations.length} (${late} ${__("atrasado(s)")})`
+			: `${destinations.length}`;
 	}
 
 	// ---- formatting ----------------------------------------------------
