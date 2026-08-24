@@ -359,7 +359,7 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 					trip ? this.date(trip.loading_date) : "—",
 					trip ? this.date(trip.departure_datetime) : "—",
 					trip ? this.date(trip.arrival_datetime) : "—",
-					this.dest_summary(trip),
+					this.render_destinations_cell(trip),
 					trip && trip.service_conformity
 						? this.badge(trip.service_conformity, FSR_STATUS_COLOR[trip.service_conformity] || "gray")
 						: "—",
@@ -379,13 +379,23 @@ entre_fleet.FleetServiceReport = class FleetServiceReport {
 		`;
 	}
 
-	dest_summary(trip) {
+	// Each stop as its own colour-coded chip (by delivery status) rather than
+	// just a count — the table cell wraps its own content so this doesn't
+	// force the whole row to balloon in width.
+	render_destinations_cell(trip) {
 		const destinations = (trip && trip.destinations) || [];
 		if (!destinations.length) return "—";
-		const late = destinations.filter((d) => d.status === "Atrasado").length;
-		return late
-			? `${destinations.length} (${late} ${__("atrasado(s)")})`
-			: `${destinations.length}`;
+
+		const chips = destinations
+			.map((d) => {
+				const statusClass = FSR_DEST_STATUS_CLASS[d.status] || "pending";
+				return `<span class="fsr-table-dest fsr-table-dest-${statusClass}" title="${this.text(
+					d.status || "Pendente"
+				)}">${this.text(d.destination)}</span>`;
+			})
+			.join("");
+
+		return `<div class="fsr-table-dest-wrap">${chips}</div>`;
 	}
 
 	// ---- formatting ----------------------------------------------------

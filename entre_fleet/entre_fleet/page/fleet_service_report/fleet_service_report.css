@@ -185,6 +185,38 @@ table.fsr-table tbody tr:last-child td {
 	border-bottom: none;
 }
 
+.fsr-table-dest-wrap {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	max-width: 280px;
+	white-space: normal;
+}
+
+.fsr-table-dest {
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.fsr-table-dest-pending {
+	background: var(--fsr-gray-200);
+	color: var(--fsr-gray-600);
+}
+
+.fsr-table-dest-ontime {
+	background: var(--fsr-teal-100);
+	color: var(--fsr-teal-500);
+}
+
+.fsr-table-dest-late {
+	background: var(--fsr-red-100);
+	color: var(--fsr-red-500);
+}
+
 table.fsr-table tbody tr:hover {
 	background: var(--fsr-teal-100);
 }
