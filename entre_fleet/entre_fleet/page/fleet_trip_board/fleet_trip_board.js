@@ -360,6 +360,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		let tripType = "Serviço a Cliente";
 		let destinationRows = [];
 		let rowSeq = 0;
+		let editingRowId = null;
 
 		const fields = [];
 
@@ -537,15 +538,32 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		const render_destinations = () => {
 			const $el = dialog.fields_dict.destinations_html.$wrapper;
 			const rows = destinationRows
-				.map(
-					(row) => `
-						<div class="ftb-dest-item">
+				.map((row) => {
+					if (row.id === editingRowId) {
+						return `
+							<div class="ftb-dest-item ftb-dest-editing" data-row="${row.id}">
+								<input type="text" class="ftb-dest-edit-name" value="${this.text(
+									row.destination
+								)}" placeholder="${__("Nome do destino")}" />
+								<input type="date" class="ftb-dest-edit-eta" value="${row.eta || ""}" />
+								<button type="button" class="ftb-dest-save" data-row="${row.id}" title="${__(
+							"Guardar"
+						)}">&#10003;</button>
+								<button type="button" class="ftb-dest-cancel-edit" data-row="${row.id}" title="${__(
+							"Cancelar"
+						)}">&times;</button>
+							</div>`;
+					}
+					return `
+						<div class="ftb-dest-item" draggable="true" data-row="${row.id}">
+							<span class="ftb-dest-handle" title="${__("Arrastar para reordenar")}">&#8942;&#8942;</span>
 							<span class="ftb-dest-dot"></span>
 							<span class="ftb-dest-name">${this.text(row.destination)}</span>
 							<span class="ftb-dest-eta">${row.eta ? this.date(row.eta) : ""}</span>
+							<button type="button" class="ftb-dest-edit" data-row="${row.id}" title="${__("Editar")}">&#9998;</button>
 							<button type="button" class="ftb-dest-remove" data-row="${row.id}">&times;</button>
-						</div>`
-				)
+						</div>`;
+				})
 				.join("");
 
 			$el.html(`
@@ -557,6 +575,11 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				<div class="ftb-dest-list">
 					${rows || `<div class="ftb-dest-empty">${__("Ainda sem destinos adicionados.")}</div>`}
 				</div>
+				${
+					destinationRows.length > 1
+						? `<div class="ftb-dest-hint">${__("Arraste pelo ⋮⋮ para reordenar a rota.")}</div>`
+						: ""
+				}
 			`);
 
 			const add_row = () => {
@@ -567,7 +590,17 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					$name.trigger("focus");
 					return;
 				}
-				destinationRows.push({ id: `row-${++rowSeq}`, destination, eta: $eta.val() || "" });
+				const eta = $eta.val() || "";
+				const newRow = { id: `row-${++rowSeq}`, destination, eta };
+				// New stops default into date order (undated ones stay wherever
+				// they land — last, effectively) — pure convenience: once added,
+				// dragging is what actually decides the route order.
+				const insertAt = eta ? destinationRows.findIndex((r) => !r.eta || r.eta > eta) : -1;
+				if (insertAt === -1) {
+					destinationRows.push(newRow);
+				} else {
+					destinationRows.splice(insertAt, 0, newRow);
+				}
 				render_destinations();
 			};
 
@@ -583,6 +616,63 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				destinationRows = destinationRows.filter((r) => r.id !== id);
 				render_destinations();
 			});
+
+			$el.find(".ftb-dest-edit").on("click", (e) => {
+				editingRowId = $(e.currentTarget).attr("data-row");
+				render_destinations();
+			});
+			$el.find(".ftb-dest-cancel-edit").on("click", () => {
+				editingRowId = null;
+				render_destinations();
+			});
+			$el.find(".ftb-dest-save").on("click", (e) => {
+				const $row = $(e.currentTarget).closest(".ftb-dest-item");
+				const destination = ($row.find(".ftb-dest-edit-name").val() || "").trim();
+				if (!destination) return;
+				const row = destinationRows.find((r) => r.id === editingRowId);
+				if (row) {
+					row.destination = destination;
+					row.eta = $row.find(".ftb-dest-edit-eta").val() || "";
+				}
+				editingRowId = null;
+				render_destinations();
+			});
+
+			// Drag-to-reorder: manual order always wins once set — this only
+			// picks where a *new* stop starts out (see add_row above).
+			let dragId = null;
+			$el.find(".ftb-dest-item[draggable='true']")
+				.on("dragstart", (e) => {
+					dragId = $(e.currentTarget).attr("data-row");
+					e.currentTarget.classList.add("ftb-dest-dragging");
+				})
+				.on("dragend", (e) => {
+					e.currentTarget.classList.remove("ftb-dest-dragging");
+					$el.find(".ftb-dest-item").removeClass("ftb-dest-drop-before ftb-dest-drop-after");
+				})
+				.on("dragover", (e) => {
+					e.preventDefault();
+					const $target = $(e.currentTarget);
+					if ($target.attr("data-row") === dragId) return;
+					const rect = e.currentTarget.getBoundingClientRect();
+					const before = e.originalEvent.clientY - rect.top < rect.height / 2;
+					$el.find(".ftb-dest-item").removeClass("ftb-dest-drop-before ftb-dest-drop-after");
+					$target.addClass(before ? "ftb-dest-drop-before" : "ftb-dest-drop-after");
+				})
+				.on("drop", (e) => {
+					e.preventDefault();
+					const targetId = $(e.currentTarget).attr("data-row");
+					if (!dragId || targetId === dragId) return;
+					const fromIndex = destinationRows.findIndex((r) => r.id === dragId);
+					if (fromIndex === -1) return;
+					const rect = e.currentTarget.getBoundingClientRect();
+					const before = e.originalEvent.clientY - rect.top < rect.height / 2;
+					const [moved] = destinationRows.splice(fromIndex, 1);
+					let toIndex = destinationRows.findIndex((r) => r.id === targetId);
+					destinationRows.splice(before ? toIndex : toIndex + 1, 0, moved);
+					dragId = null;
+					render_destinations();
+				});
 		};
 
 		const dialog = new frappe.ui.Dialog({

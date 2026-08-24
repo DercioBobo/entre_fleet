@@ -588,6 +588,115 @@
 	background: var(--tb-gray-200);
 }
 
+.ftb-dest-handle {
+	flex: 0 0 auto;
+	color: var(--tb-gray-500);
+	font-size: 12px;
+	line-height: 1;
+	letter-spacing: -2px;
+	cursor: grab;
+	touch-action: none;
+}
+
+.ftb-dest-item[draggable="true"] {
+	cursor: default;
+}
+
+.ftb-dest-edit {
+	flex: 0 0 auto;
+	border: none;
+	background: transparent;
+	color: var(--tb-gray-500);
+	cursor: pointer;
+	font-size: 13px;
+	line-height: 1;
+	padding: 3px 5px;
+	border-radius: 4px;
+	transition: background 0.12s ease, color 0.12s ease;
+}
+
+.ftb-dest-edit:hover {
+	color: var(--tb-teal-500);
+	background: var(--tb-gray-200);
+}
+
+.ftb-dest-dragging {
+	opacity: 0.4;
+}
+
+.ftb-dest-drop-before {
+	box-shadow: 0 -2px 0 0 var(--tb-teal-500);
+}
+
+.ftb-dest-drop-after {
+	box-shadow: 0 2px 0 0 var(--tb-teal-500);
+}
+
+.ftb-dest-hint {
+	font-size: 11px;
+	color: var(--tb-gray-500);
+	font-style: italic;
+	margin-top: 4px;
+}
+
+.ftb-dest-editing {
+	gap: 8px;
+}
+
+.ftb-dest-editing input[type="text"],
+.ftb-dest-editing input[type="date"] {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding: 6px 8px;
+	font-size: 13px;
+	color: var(--tb-navy-900);
+	background: #fff;
+	border: 1px solid var(--tb-gray-200);
+	border-radius: 6px;
+	outline: none;
+}
+
+.ftb-dest-editing input[type="date"] {
+	flex: 0 0 140px;
+}
+
+.ftb-dest-editing input:focus {
+	border-color: var(--tb-teal-500);
+}
+
+.ftb-dest-save {
+	flex: 0 0 auto;
+	border: none;
+	background: var(--tb-teal-500);
+	color: #fff;
+	cursor: pointer;
+	font-size: 12px;
+	line-height: 1;
+	padding: 6px 8px;
+	border-radius: 6px;
+}
+
+.ftb-dest-save:hover {
+	background: var(--tb-navy-700);
+}
+
+.ftb-dest-cancel-edit {
+	flex: 0 0 auto;
+	border: none;
+	background: transparent;
+	color: var(--tb-gray-500);
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+	padding: 2px 5px;
+	border-radius: 4px;
+}
+
+.ftb-dest-cancel-edit:hover {
+	color: var(--tb-red-500);
+	background: var(--tb-gray-200);
+}
+
 .ftb-dest-empty {
 	font-size: 12px;
 	color: var(--tb-gray-500);
