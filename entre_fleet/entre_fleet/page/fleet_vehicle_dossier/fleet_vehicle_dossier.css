@@ -466,6 +466,65 @@ table.dossier-table a:hover {
 	padding: 6px 2px 4px;
 }
 
+.efd-tyre-view {
+	flex: 1 1 100%;
+}
+
+.efd-tyre-view-toggle {
+	display: inline-flex;
+	background: var(--efd-sand-50);
+	border: 1px solid var(--efd-gray-200);
+	border-radius: 999px;
+	padding: 3px;
+	gap: 2px;
+	margin-bottom: 10px;
+}
+
+.efd-tyre-view-btn {
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--efd-gray-600);
+	padding: 6px 14px;
+	border-radius: 999px;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.efd-tyre-view-btn:hover {
+	color: var(--efd-navy-900);
+}
+
+.efd-tyre-view-btn.active {
+	background: var(--efd-navy-700);
+	color: #fff;
+}
+
+.efd-3d-slot {
+	width: 100%;
+	max-width: 640px;
+	height: 420px;
+	border: 1px solid var(--efd-gray-200);
+	border-radius: 10px;
+	overflow: hidden;
+	background: #f7f5f1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.efd-3d-mount,
+.efd-3d-mount three-d-stage {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.efd-hidden {
+	display: none !important;
+}
+
 .dossier-tyre-svg {
 	width: 140px;
 	flex: 0 0 auto;

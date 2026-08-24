@@ -43,6 +43,20 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		});
 
 		this.$container = $('<div class="fleet-dossier">').appendTo(this.page.body);
+
+		// The <three-d-stage> custom element only builds its model once, the
+		// first time semi_truck_model.js runs — it can't be recreated, so it
+		// lives permanently in <body>, outside $container, and gets *moved*
+		// (not rebuilt) into whichever vehicle's tyre section is showing.
+		// That's the only way its WebGL context survives render() wiping and
+		// rebuilding $container on every vehicle switch.
+		this.$threeDMount = $(
+			'<div class="efd-3d-mount"><three-d-stage name="semi-tractor" background="#f7f5f1"></three-d-stage></div>'
+		)
+			.appendTo(document.body)
+			.hide();
+		this.truck_ready = null;
+
 		this.render_vehicle_index();
 		this.load_from_route();
 	}
@@ -77,6 +91,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	// ---- vehicle index (card grid + search) -------------------------------
 
 	render_vehicle_index() {
+		this.$threeDMount.hide();
 		this.$container.html(`
 			<div class="dossier-index">
 				<div class="dossier-index-toolbar">
@@ -184,6 +199,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	render(data) {
 		this.data = data;
 		this.$container.empty();
+		this.$threeDMount.hide();
 		this.$container.append(this.render_back_link());
 		this.$container.append(this.render_hero(data.vehicle, data.documents, data.schedules[0] || null));
 		this.$container.append(this.render_kpis(data.summary));
@@ -199,6 +215,14 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		this.$container.find("[data-action='detalhes']").on("click", (e) => {
 			this.open_trip_details_dialog($(e.currentTarget).attr("data-trip"));
 		});
+
+		this.$container.find(".efd-tyre-view-btn").on("click", (e) => {
+			this.set_tyre_view($(e.currentTarget).attr("data-tyreview"));
+		});
+
+		if ((data.vehicle.tyres || []).length) {
+			this.mount_truck_view(data.vehicle);
+		}
 	}
 
 	render_back_link() {
@@ -292,14 +316,37 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			return "";
 		}
 
-		return this.render_section(
-			__("Pneus e Baterias"),
-			this.render_tyre_diagram(tyres, batteries),
-			tyres.length + batteries.length
-		);
+		const batteryRow = batteries.length
+			? `<div class="dossier-battery-row">${batteries.map((b) => this.render_battery_chip(b)).join("")}</div>`
+			: "";
+
+		const tyreView = tyres.length
+			? `
+				<div class="efd-tyre-view">
+					<div class="efd-tyre-view-toggle">
+						<button type="button" class="efd-tyre-view-btn active" data-tyreview="3d">${__("3D")}</button>
+						<button type="button" class="efd-tyre-view-btn" data-tyreview="2d">${__("Esquema")}</button>
+					</div>
+					<div class="efd-3d-slot">
+						<p class="dossier-empty">${__("A carregar modelo 3D...")}</p>
+					</div>
+					<div class="efd-2d-diagram efd-hidden">${this.render_tyre_svg(tyres)}</div>
+				</div>
+			`
+			: "";
+
+		const body = `
+			<div class="dossier-tyre-diagram">
+				${tyreView}
+				${batteryRow}
+				${this.render_condition_legend()}
+			</div>
+		`;
+
+		return this.render_section(__("Pneus e Baterias"), body, tyres.length + batteries.length);
 	}
 
-	render_tyre_diagram(tyres, batteries) {
+	render_tyre_svg(tyres) {
 		const axles = this.group_tyres_by_axle(tyres);
 
 		const axleSpacing = 64;
@@ -323,18 +370,127 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			svg += `<text x="${width / 2}" y="${y + 4}" class="dossier-tyre-axle-label">${axle.axle_number}</text>`;
 		});
 		svg += `</svg>`;
+		return svg;
+	}
 
-		const batteryRow = batteries.length
-			? `<div class="dossier-battery-row">${batteries.map((b) => this.render_battery_chip(b)).join("")}</div>`
-			: "";
+	// ---- 3D tyre model ------------------------------------------------
 
-		return `
-			<div class="dossier-tyre-diagram">
-				${tyres.length ? svg : ""}
-				${batteryRow}
-				${this.render_condition_legend()}
-			</div>
-		`;
+	// Loads the vendored three.js pack once per page session (lazy — only
+	// vehicles with tyres ever trigger this) and resolves with window.truck.
+	load_truck_model() {
+		if (this.truck_ready) return this.truck_ready;
+
+		this.truck_ready = new Promise((resolve, reject) => {
+			if (!document.querySelector('script[type="importmap"]')) {
+				const importMap = document.createElement("script");
+				importMap.type = "importmap";
+				importMap.textContent = JSON.stringify({
+					imports: {
+						three: "/assets/entre_fleet/js/vendor/three/three.module.min.js",
+						"three/addons/controls/OrbitControls.js": "/assets/entre_fleet/js/vendor/three/OrbitControls.js",
+					},
+				});
+				document.head.appendChild(importMap);
+			}
+
+			const stageScript = document.createElement("script");
+			stageScript.src = "/assets/entre_fleet/js/three-d-stage.js";
+			stageScript.onerror = () => reject(new Error("three-d-stage.js failed to load"));
+			stageScript.onload = () => {
+				const modelScript = document.createElement("script");
+				modelScript.type = "module";
+				modelScript.src = "/assets/entre_fleet/js/semi_truck_model.js";
+				modelScript.onerror = () => reject(new Error("semi_truck_model.js failed to load"));
+				document.body.appendChild(modelScript);
+
+				const start = Date.now();
+				const poll = setInterval(() => {
+					if (window.truck) {
+						clearInterval(poll);
+						resolve(window.truck);
+					} else if (Date.now() - start > 15000) {
+						clearInterval(poll);
+						reject(new Error("Timed out waiting for the 3D truck model"));
+					}
+				}, 60);
+			};
+			document.head.appendChild(stageScript);
+		});
+
+		return this.truck_ready;
+	}
+
+	mount_truck_view(vehicle) {
+		const $slot = this.$container.find(".efd-3d-slot");
+		if (!$slot.length) return;
+
+		this.load_truck_model()
+			.then((truck) => {
+				// The user may have navigated to another vehicle while this
+				// was loading — don't graft the model onto a stale section.
+				if (!this.$container.find(".efd-3d-slot").is($slot)) return;
+
+				$slot.find(".dossier-empty").remove();
+				this.$threeDMount.appendTo($slot).show();
+
+				truck.clear();
+				(vehicle.tyres || []).forEach((tyre) => {
+					const color = this.tyre_highlight_color(tyre.condition);
+					if (!color) return;
+					this.tyre_part_selectors(tyre).forEach((sel) => truck.highlight(sel, { color, tint: true }));
+				});
+			})
+			.catch((err) => {
+				console.error(err);
+				$slot.html(`<p class="dossier-empty">${__("Modelo 3D indisponível — a usar o esquema 2D.")}</p>`);
+				this.set_tyre_view("2d");
+			});
+	}
+
+	tyre_highlight_color(condition) {
+		const map = {
+			Novo: "#2e8b57",
+			Nova: "#2e8b57",
+			Recauchutado: "#1c8c82",
+			Usado: "#8994a1",
+			Usada: "#8994a1",
+			"A Substituir": "#c4453a",
+		};
+		return map[condition] || null;
+	}
+
+	// Maps a Fleet Vehicle Tyre row onto the 3D model's mesh names — mirrors
+	// Fleet Vehicle.sync_tyre_positions(): axle 1 is the steer axle, axle 2+
+	// are drive axles. With dual_rear_tyres the label carries "Externo"/
+	// "Interno"; without it, there's one position per side, so both meshes
+	// for that side light up together since the model only has duals there.
+	tyre_part_selectors(tyre) {
+		const side = tyre.side === "Direito" ? "r" : "l";
+		if (tyre.axle_number === 1) return [`steer_${side}_tire`];
+
+		const driveIndex = tyre.axle_number - 1;
+		if (driveIndex < 1 || driveIndex > 2) return [];
+
+		const prefix = `drive${driveIndex}_${side}`;
+		const label = tyre.position_label || "";
+		if (label.includes("Externo")) return [`${prefix}_out_tire`];
+		if (label.includes("Interno")) return [`${prefix}_in_tire`];
+		return [`${prefix}_out_tire`, `${prefix}_in_tire`];
+	}
+
+	set_tyre_view(mode) {
+		this.$container.find(".efd-tyre-view-btn").removeClass("active");
+		this.$container.find(`.efd-tyre-view-btn[data-tyreview="${mode}"]`).addClass("active");
+
+		if (mode === "3d") {
+			this.$container.find(".efd-3d-slot").removeClass("efd-hidden");
+			this.$container.find(".efd-2d-diagram").addClass("efd-hidden");
+			if (this.$threeDMount.parent().is(this.$container.find(".efd-3d-slot"))) this.$threeDMount.show();
+		} else {
+			this.$threeDMount.hide();
+			this.$container.find(".efd-3d-slot").addClass("efd-hidden");
+			this.$container.find(".efd-2d-diagram").removeClass("efd-hidden");
+		}
 	}
 
 	group_tyres_by_axle(tyres) {
