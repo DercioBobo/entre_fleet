@@ -415,6 +415,14 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 						const toolbar =
 							stageEl && stageEl.shadowRoot && stageEl.shadowRoot.querySelector(".toolbar");
 						if (toolbar) toolbar.style.display = "none";
+						// Bound exactly once here, not per vehicle-switch in
+						// mount_truck_view — onPick() adds a new click listener
+						// every time it's called and never removes the old one,
+						// so re-binding per mount would fire the handler multiple
+						// times per click after visiting a few vehicles. It always
+						// reads this.data.vehicle, so it stays correct regardless
+						// of which vehicle is on screen at click-time.
+						window.truck.onPick((name) => this.handle_truck_pick(name));
 						resolve(window.truck);
 					} else if (Date.now() - start > 15000) {
 						clearInterval(poll);
@@ -449,10 +457,10 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 					// setStyle() clears whatever highlights were active, so the
 					// condition colours need reapplying every time it's used.
 					truck.setStyle(style);
-					this.apply_tyre_highlights(truck, vehicle);
+					this.apply_condition_highlights(truck, vehicle);
 				});
 
-				this.apply_tyre_highlights(truck, vehicle);
+				this.apply_condition_highlights(truck, vehicle);
 			})
 			.catch((err) => {
 				console.error(err);
@@ -478,16 +486,37 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		return `<div class="efd-truck-style-toggle">${buttons}</div>`;
 	}
 
-	apply_tyre_highlights(truck, vehicle) {
+	apply_condition_highlights(truck, vehicle) {
 		truck.clear();
 		(vehicle.tyres || []).forEach((tyre) => {
-			const color = this.tyre_highlight_color(tyre.condition);
+			const color = this.condition_highlight_color(tyre.condition);
 			if (!color) return;
 			this.tyre_part_selectors(tyre).forEach((sel) => truck.highlight(sel, { color, tint: true }));
 		});
+
+		// The model only has one battery_box mesh regardless of battery_count,
+		// so it lights up to whichever battery is in the worst condition —
+		// same "something here needs attention" signal as the 2D battery chips.
+		const batteryColor = this.condition_highlight_color(this.worst_condition(vehicle.batteries || []));
+		if (batteryColor) truck.highlight("battery_box", { color: batteryColor, tint: true });
 	}
 
-	tyre_highlight_color(condition) {
+	worst_condition(items) {
+		const severity = { "A Substituir": 3, Usado: 2, Usada: 2, Recauchutado: 1, Novo: 0, Nova: 0 };
+		let worst = null;
+		let worstScore = -1;
+		items.forEach((item) => {
+			const score = severity[item.condition];
+			if (score === undefined) return;
+			if (score > worstScore) {
+				worstScore = score;
+				worst = item.condition;
+			}
+		});
+		return worst;
+	}
+
+	condition_highlight_color(condition) {
 		const map = {
 			Novo: "#2e8b57",
 			Nova: "#2e8b57",
@@ -516,6 +545,48 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		if (label.includes("Externo")) return [`${prefix}_out_tire`];
 		if (label.includes("Interno")) return [`${prefix}_in_tire`];
 		return [`${prefix}_out_tire`, `${prefix}_in_tire`];
+	}
+
+	// Click-to-select: only tyre meshes are actionable (wheels/hubcaps/frame
+	// etc. just get ignored). Reverses tyre_part_selectors() to find which
+	// row was clicked, against whatever vehicle is currently on screen.
+	handle_truck_pick(name) {
+		if (!name || !name.endsWith("_tire")) return;
+		const vehicle = this.data && this.data.vehicle;
+		if (!vehicle) return;
+
+		const tyre = (vehicle.tyres || []).find((t) => this.tyre_part_selectors(t).includes(name));
+		if (!tyre) return;
+
+		frappe.prompt(
+			[
+				{
+					fieldname: "condition",
+					fieldtype: "Select",
+					label: __("Estado"),
+					options: "\nNovo\nRecauchutado\nUsado\nA Substituir",
+					default: tyre.condition || "",
+					reqd: 1,
+				},
+			],
+			(values) => {
+				frappe.call({
+					method: "entre_fleet.entre_fleet.api.update_tyre_condition",
+					args: {
+						vehicle: vehicle.name,
+						position_label: tyre.position_label,
+						condition: values.condition,
+					},
+					freeze: true,
+					freeze_message: __("A actualizar pneu..."),
+				}).then(() => {
+					frappe.show_alert({ message: __("Pneu actualizado."), indicator: "green" });
+					this.load_vehicle(this.current_vehicle);
+				});
+			},
+			`${__("Actualizar Pneu")} — ${tyre.position_label}`,
+			__("Guardar")
+		);
 	}
 
 	set_tyre_view(mode) {

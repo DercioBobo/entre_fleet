@@ -204,6 +204,25 @@ def mark_trip_destination_delivered(trip_log, destination_row, actual_delivery_d
 
 
 @frappe.whitelist()
+def update_tyre_condition(vehicle, position_label, condition):
+	"""Backs the Vehicle Dossier's click-to-select on the 3D model — clicking
+	a tyre mesh opens a one-field prompt that calls straight into this rather
+	than routing through the full Fleet Vehicle form."""
+	if not frappe.has_permission("Fleet Vehicle", "write", vehicle):
+		frappe.throw(_("Não tem permissão para actualizar este veículo."), frappe.PermissionError)
+
+	doc = frappe.get_doc("Fleet Vehicle", vehicle)
+	row = next((r for r in doc.tyres if r.position_label == position_label), None)
+	if not row:
+		frappe.throw(_("Posição de pneu não encontrada."))
+
+	row.condition = condition
+	row.last_changed_date = frappe.utils.today()
+	doc.save()
+	return doc.name
+
+
+@frappe.whitelist()
 def end_trip(trip_log, arrival_datetime, odometer_end, remarks=None, service_conformity=None):
 	if not frappe.has_permission("Fleet Trip Log", "submit"):
 		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
