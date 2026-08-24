@@ -652,3 +652,84 @@ def _build_summary(trips, fuel_logs, maintenance_requests, job_cards, documents,
 		"inspection_count": len(inspections),
 		"non_conforming_inspections_count": len(non_conforming_inspections),
 	}
+
+
+@frappe.whitelist()
+def get_service_report(search=None, status=None):
+	"""One row per Fleet Service Order, each carrying every trip dispatched
+	against it (and each trip carrying its own destinations) — the
+	client-facing view of "who did we serve, with which trucks, and did it
+	arrive on time," which no single doctype list can show on its own."""
+	if not frappe.has_permission("Fleet Service Order", "read"):
+		frappe.throw(_("Não tem permissão para ver este relatório."), frappe.PermissionError)
+
+	filters = {}
+	if status:
+		filters["status"] = status
+
+	orders = frappe.get_all(
+		"Fleet Service Order",
+		filters=filters,
+		fields=[
+			"name",
+			"customer",
+			"customer.customer_name as customer_name",
+			"service_reference",
+			"order_date",
+			"vehicles_requested",
+			"status",
+			"remarks",
+		],
+		order_by="order_date desc, creation desc",
+		limit_page_length=0,
+	)
+
+	if search:
+		term = search.lower()
+		orders = [
+			o
+			for o in orders
+			if term in (o.name or "").lower()
+			or term in (o.customer_name or o.customer or "").lower()
+			or term in (o.service_reference or "").lower()
+		]
+
+	if not orders:
+		return []
+
+	trips = frappe.get_all(
+		"Fleet Trip Log",
+		filters={"service_order": ["in", [o.name for o in orders]], "docstatus": ["!=", 2]},
+		fields=[
+			"name",
+			"service_order",
+			"vehicle",
+			"vehicle.license_plate as license_plate",
+			"vehicle.vehicle_type as vehicle_type",
+			"vehicle.load_capacity as load_capacity",
+			"driver",
+			"driver.driver_name as driver_name",
+			"loading_location",
+			"loading_date",
+			"delay_reason",
+			"departure_datetime",
+			"arrival_datetime",
+			"odometer_start",
+			"odometer_end",
+			"cargo",
+			"service_conformity",
+			"remarks",
+			"docstatus",
+		],
+		order_by="departure_datetime asc, creation asc",
+	)
+	attach_destinations(trips)
+
+	trips_by_order = {}
+	for trip in trips:
+		trips_by_order.setdefault(trip.service_order, []).append(trip)
+
+	for order in orders:
+		order["trips"] = trips_by_order.get(order.name, [])
+
+	return orders
