@@ -62,6 +62,7 @@ def get_trip_board():
 			"model",
 			"status",
 			"current_odometer",
+			"load_capacity",
 		],
 		order_by="license_plate asc",
 		limit_page_length=0,
@@ -153,6 +154,7 @@ def start_trip(
 	cargo=None,
 	trip_type="Interno",
 	service_order=None,
+	customer=None,
 	loading_location=None,
 	loading_date=None,
 	destinations=None,
@@ -170,6 +172,7 @@ def start_trip(
 
 	if trip.trip_type == "Serviço a Cliente":
 		trip.service_order = service_order
+		trip.customer = customer
 		trip.loading_location = loading_location
 		trip.loading_date = loading_date
 		for row in frappe.parse_json(destinations) or []:

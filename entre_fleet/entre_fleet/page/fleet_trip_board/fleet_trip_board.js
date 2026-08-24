@@ -352,6 +352,9 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				options: "Fleet Driver",
 				label: __("Condutor"),
 				reqd: 1,
+				get_query: () => ({
+					query: "entre_fleet.entre_fleet.doctype.fleet_trip_log.fleet_trip_log.driver_query",
+				}),
 			},
 			{ fieldname: "col_top", fieldtype: "Column Break" },
 			{
@@ -378,6 +381,9 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					fieldtype: "Data",
 					label: __("Carga"),
 					reqd: 1,
+					description: vehicle.load_capacity
+						? __("Capacidade do veículo: {0} toneladas", [vehicle.load_capacity])
+						: "",
 				},
 				{
 					fieldname: "route",
@@ -392,16 +398,57 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					depends_on: 'eval:doc.trip_type == "Serviço a Cliente"',
 				},
 				{
-					fieldname: "service_order",
+					fieldname: "customer",
 					fieldtype: "Link",
-					options: "Fleet Service Order",
-					label: __("Pedido de Serviço"),
+					options: "Customer",
+					label: __("Cliente"),
+					onchange: function () {
+						const customerVal = this.get_value();
+						const orderVal = dialog.get_value("service_order");
+						if (!customerVal || !orderVal) return;
+						frappe.db.get_value("Fleet Service Order", orderVal, "customer").then((r) => {
+							if (r.message.customer && r.message.customer !== customerVal) {
+								// The order on file belongs to a different client —
+								// clear it rather than leave a mismatched pairing.
+								dialog.set_value("service_order", "");
+							}
+						});
+					},
 				},
-				{ fieldname: "col_service", fieldtype: "Column Break" },
 				{
 					fieldname: "loading_location",
 					fieldtype: "Data",
 					label: __("Local de Carregamento"),
+				},
+				{ fieldname: "col_service", fieldtype: "Column Break" },
+				{
+					fieldname: "service_order",
+					fieldtype: "Link",
+					options: "Fleet Service Order",
+					label: __("Pedido de Serviço"),
+					get_query: () => {
+						const filters = { status: ["in", ["Aberta", "Em Andamento"]] };
+						const customerVal = dialog.get_value("customer");
+						if (customerVal) filters.customer = customerVal;
+						return { filters };
+					},
+					onchange: function () {
+						const val = this.get_value();
+						if (!val) {
+							dialog.set_df_property("service_order", "description", "");
+							return;
+						}
+						frappe.db.get_value("Fleet Service Order", val, ["customer", "order_date"]).then((r) => {
+							if (r.message.customer) dialog.set_value("customer", r.message.customer);
+							dialog.set_df_property(
+								"service_order",
+								"description",
+								r.message.order_date
+									? __("Data do Pedido: {0}", [frappe.datetime.str_to_user(r.message.order_date)])
+									: ""
+							);
+						});
+					},
 				},
 				{
 					fieldname: "loading_date",
