@@ -164,7 +164,7 @@ def start_trip(
 	trip.vehicle = vehicle
 	trip.driver = driver
 	trip.odometer_start = frappe.utils.flt(odometer_start)
-	trip.departure_datetime = departure_datetime or frappe.utils.now_datetime()
+	trip.departure_datetime = frappe.utils.getdate(departure_datetime) if departure_datetime else frappe.utils.today()
 	trip.trip_type = trip_type or "Interno"
 	trip.cargo = cargo
 

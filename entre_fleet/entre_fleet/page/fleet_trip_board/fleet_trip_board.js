@@ -241,7 +241,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 							<div class="trip-card-detail"><strong>${__("Referência")}:</strong> ${this.text(trip.service_reference || "—")}</div>`
 							: ""
 					}
-					<div class="trip-card-detail"><strong>${__("Saída")}:</strong> ${this.datetime(trip.departure_datetime)}</div>
+					<div class="trip-card-detail"><strong>${__("Saída")}:</strong> ${this.date(trip.departure_datetime)}</div>
 					<div class="trip-card-detail"><strong>${__("Odómetro Inicial")}:</strong> ${this.text(trip.odometer_start)} km</div>
 					${!isService && trip.route ? `<div class="trip-card-detail"><strong>${__("Rota")}:</strong> ${this.text(trip.route)}</div>` : ""}
 					${trip.cargo ? `<div class="trip-card-detail"><strong>${__("Carga")}:</strong> ${this.text(trip.cargo)}</div>` : ""}
@@ -303,20 +303,23 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		this.$container.find(".trip-card-elapsed").each((_, el) => {
 			const $el = $(el);
 			const departure = $el.attr("data-departure");
-			$el.text(`${__("Em curso há")} ${this.format_elapsed(departure)}`);
+			$el.text(this.format_elapsed(departure));
 		});
 	}
 
+	// Data de Saída only carries a date (no time), so elapsed time is counted
+	// in whole days since departure rather than a precise hh:mm countdown.
 	format_elapsed(departureStr) {
 		if (!departureStr) return "—";
 		const start = frappe.datetime.str_to_obj(departureStr);
-		const diffMs = Date.now() - start.getTime();
-		if (diffMs < 0) return "0min";
+		const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+		const today = new Date();
+		const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+		const days = Math.round((todayDay - startDay) / 86400000);
 
-		const totalMinutes = Math.floor(diffMs / 60000);
-		const hours = Math.floor(totalMinutes / 60);
-		const minutes = totalMinutes % 60;
-		return hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+		if (days <= 0) return __("Em curso desde hoje");
+		if (days === 1) return __("Em curso há 1 dia");
+		return __("Em curso há {0} dias", [days]);
 	}
 
 	// ---- dialogs -------------------------------------------------------
@@ -353,10 +356,10 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			{ fieldname: "col_top", fieldtype: "Column Break" },
 			{
 				fieldname: "departure_datetime",
-				fieldtype: "Datetime",
-				label: __("Data/Hora de Saída"),
+				fieldtype: "Date",
+				label: __("Data de Saída"),
 				reqd: 1,
-				default: frappe.datetime.now_datetime(),
+				default: frappe.datetime.get_today(),
 			},
 			{
 				fieldname: "odometer_start",

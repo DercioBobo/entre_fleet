@@ -146,3 +146,63 @@ class FleetTripLog(Document):
 		)
 
 		recompute_status(self.service_order)
+
+
+def _open_trip_names(fieldname, exclude_trip_log):
+	"""Vehicles/drivers tied up on a trip that has departed but not yet
+	returned — excluded from the New Fleet Trip Log pickers so dispatchers
+	can't double-book them. The trip being edited is excluded from its own
+	check, same as check_single_open_trip."""
+	return frappe.get_all(
+		"Fleet Trip Log",
+		filters={
+			"docstatus": 0,
+			"arrival_datetime": ["is", "not set"],
+			"name": ["!=", exclude_trip_log or "new"],
+		},
+		pluck=fieldname,
+	)
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def vehicle_query(doctype, txt, searchfield, start, page_len, filters):
+	busy = _open_trip_names("vehicle", (filters or {}).get("trip_log"))
+	values = {"txt": f"%{txt}%", "status": "Activo", "start": start, "page_len": page_len}
+	condition = ""
+	if busy:
+		values["busy"] = busy
+		condition = "and name not in %(busy)s"
+
+	return frappe.db.sql(
+		f"""select name, license_plate
+		from `tabFleet Vehicle`
+		where status = %(status)s
+		and ({searchfield} like %(txt)s or license_plate like %(txt)s)
+		{condition}
+		order by license_plate
+		limit %(page_len)s offset %(start)s""",
+		values,
+	)
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def driver_query(doctype, txt, searchfield, start, page_len, filters):
+	busy = _open_trip_names("driver", (filters or {}).get("trip_log"))
+	values = {"txt": f"%{txt}%", "status": "Activo", "start": start, "page_len": page_len}
+	condition = ""
+	if busy:
+		values["busy"] = busy
+		condition = "and name not in %(busy)s"
+
+	return frappe.db.sql(
+		f"""select name, driver_name
+		from `tabFleet Driver`
+		where status = %(status)s
+		and ({searchfield} like %(txt)s or driver_name like %(txt)s)
+		{condition}
+		order by driver_name
+		limit %(page_len)s offset %(start)s""",
+		values,
+	)

@@ -22,11 +22,13 @@
   "estimated_fuel_used",
   "estimated_fuel_cost",
   "section_break_service",
-  "service_order",
   "loading_location",
   "column_break_service",
   "loading_date",
+  "service_order",
+  "column_break_service2",
   "vehicle_load_capacity",
+  "section_break_destinations",
   "destinations",
   "service_conformity",
   "section_break_route",
@@ -82,10 +84,12 @@
   },
   {
    "fieldname": "departure_datetime",
-   "fieldtype": "Datetime",
-   "label": "Data/Hora de Saída"
+   "fieldtype": "Date",
+   "label": "Data de Saída",
+   "reqd": 1
   },
   {
+   "depends_on": "eval:!doc.__islocal",
    "fieldname": "arrival_datetime",
    "fieldtype": "Datetime",
    "label": "Data/Hora de Chegada"
@@ -102,6 +106,7 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval:!doc.__islocal",
    "fieldname": "odometer_end",
    "fieldtype": "Float",
    "label": "Odómetro Final"
@@ -132,15 +137,6 @@
    "label": "Serviço ao Cliente"
   },
   {
-   "fieldname": "service_order",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Pedido de Serviço",
-   "mandatory_depends_on": "eval:doc.trip_type == 'Serviço a Cliente'",
-   "options": "Fleet Service Order"
-  },
-  {
    "fieldname": "loading_location",
    "fieldtype": "Data",
    "label": "Local de Carregamento"
@@ -155,6 +151,19 @@
    "label": "Data de Carregamento"
   },
   {
+   "fieldname": "service_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Pedido de Serviço",
+   "mandatory_depends_on": "eval:doc.trip_type == 'Serviço a Cliente'",
+   "options": "Fleet Service Order"
+  },
+  {
+   "fieldname": "column_break_service2",
+   "fieldtype": "Column Break"
+  },
+  {
    "fetch_from": "vehicle.load_capacity",
    "fieldname": "vehicle_load_capacity",
    "fieldtype": "Float",
@@ -162,10 +171,15 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.trip_type == 'Serviço a Cliente'",
+   "fieldname": "section_break_destinations",
+   "fieldtype": "Section Break",
+   "label": "Destinos"
+  },
+  {
    "allow_on_submit": 1,
    "fieldname": "destinations",
    "fieldtype": "Table",
-   "label": "Destinos",
    "options": "Fleet Trip Destination"
   },
   {
