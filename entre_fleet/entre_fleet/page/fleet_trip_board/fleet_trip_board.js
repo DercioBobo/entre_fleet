@@ -196,32 +196,49 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					${isService ? `<span class="trip-card-service-badge">${__("Serviço")}</span>` : ""}
 				</div>
 				<div class="trip-card-type">${this.text(vehicle.vehicle_type || "—")}</div>
-				${this.render_stepper(state)}
+				${this.render_stepper(vehicle, state)}
 				${this.render_card_body(vehicle, state)}
 			</div>
 		`;
 	}
 
-	render_stepper(state) {
-		const stepClass = (step) => {
-			if (state === "on_trip") return step === "saida" ? "done" : step === "trip" ? "active" : "pending";
-			if (state === "available") return "pending";
-			return "pending";
-		};
+	// Service trips with destinations get a 4th step — "A Regressar" is derived
+	// from the destinations already being tracked (all delivered = heading
+	// back), not a separate field/action. Interno trips (and service trips
+	// without destinations) keep the plain 3-step Saída → Em Viagem → Chegada,
+	// since there's no signal there for when a return leg starts.
+	render_stepper(vehicle, state) {
+		const trip = state === "on_trip" ? vehicle.open_trip : null;
+		const isService = !!trip && trip.trip_type === "Serviço a Cliente" && (trip.destinations || []).length > 0;
+		const allDelivered = isService && trip.destinations.every((d) => d.actual_delivery_date);
+
+		const steps = isService
+			? [
+					{ label: __("Saída"), state: "done" },
+					{ label: __("Em Viagem"), state: allDelivered ? "done" : "active" },
+					{ label: __("A Regressar"), state: allDelivered ? "active" : "pending" },
+					{ label: __("Chegada"), state: "pending" },
+			  ]
+			: [
+					{ label: __("Saída"), state: state === "on_trip" ? "done" : "pending" },
+					{ label: __("Em Viagem"), state: state === "on_trip" ? "active" : "pending" },
+					{ label: __("Chegada"), state: "pending" },
+			  ];
+
+		const items = steps
+			.map((s, i) => {
+				const node = `
+					<span class="trip-step trip-step-${s.state}">
+						<span class="trip-step-dot"></span>${s.label}
+					</span>`;
+				if (i === 0) return node;
+				return `<span class="trip-step-line trip-step-line-${s.state}"></span>${node}`;
+			})
+			.join("");
 
 		return `
 			<div class="trip-stepper" aria-hidden="true">
-				<span class="trip-step trip-step-${stepClass("saida")}">
-					<span class="trip-step-dot"></span>${__("Saída")}
-				</span>
-				<span class="trip-step-line trip-step-line-${stepClass("trip")}"></span>
-				<span class="trip-step trip-step-${stepClass("trip")}">
-					<span class="trip-step-dot"></span>${__("Em Viagem")}
-				</span>
-				<span class="trip-step-line trip-step-line-${stepClass("chegada")}"></span>
-				<span class="trip-step trip-step-${stepClass("chegada")}">
-					<span class="trip-step-dot"></span>${__("Chegada")}
-				</span>
+				${items}
 			</div>
 		`;
 	}
@@ -781,11 +798,14 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				}
 				nodes.push({ label: d.destination, sub: d.eta ? this.date(d.eta) : "", state });
 			});
+			// Once every destination is delivered the truck is presumed to be
+			// heading back — derived from delivery data, no separate action.
 			nodes.push({
-				label: __("Chegada"),
+				label: __("A Regressar"),
 				sub: "",
 				state: destinations.every((d) => d.actual_delivery_date) ? "active" : "pending",
 			});
+			nodes.push({ label: __("Chegada"), sub: "", state: "pending" });
 		} else {
 			nodes.push({ label: __("Em Viagem"), sub: "", state: "active" });
 			nodes.push({ label: __("Chegada"), sub: "", state: "pending" });

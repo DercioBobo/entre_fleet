@@ -581,10 +581,17 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				}
 				nodes.push({ label: d.destination, sub: d.eta ? this.date(d.eta) : "", state });
 			});
+			// A closed trip's return leg definitely happened, delivered or not;
+			// an open one is "returning" once every destination is delivered.
+			nodes.push({
+				label: __("A Regressar"),
+				sub: "",
+				state: arrived ? "done" : destinations.every((d) => d.actual_delivery_date) ? "active" : "pending",
+			});
 			nodes.push({
 				label: __("Chegada"),
 				sub: arrived ? this.date(trip.arrival_datetime) : "",
-				state: arrived ? "done" : destinations.every((d) => d.actual_delivery_date) ? "active" : "pending",
+				state: arrived ? "done" : "pending",
 			});
 		} else {
 			nodes.push({ label: __("Em Viagem"), sub: "", state: arrived ? "done" : "active" });
