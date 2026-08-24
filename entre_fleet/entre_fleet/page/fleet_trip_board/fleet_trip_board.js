@@ -132,6 +132,9 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		$grid.find("[data-action='chegada']").on("click", (e) => {
 			this.open_chegada_dialog(this.vehicle_by_name($(e.currentTarget).attr("data-vehicle")));
 		});
+		$grid.find("[data-action='detalhes']").on("click", (e) => {
+			this.open_details_dialog(this.vehicle_by_name($(e.currentTarget).attr("data-vehicle")));
+		});
 		$grid.find("[data-action='entrega']").on("click", (e) => {
 			const $btn = $(e.currentTarget);
 			this.open_entrega_dialog(this.vehicle_by_name($btn.attr("data-vehicle")), $btn.attr("data-row"));
@@ -248,9 +251,14 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					<div class="trip-card-elapsed" data-departure="${trip.departure_datetime}">—</div>
 				</div>
 				${isService ? this.render_destinations(vehicle, trip) : ""}
-				<button class="btn btn-sm btn-primary trip-card-btn" data-action="chegada" data-vehicle="${this.text(
-					vehicle.name
-				)}">${__("Registar Chegada")}</button>
+				<div class="trip-card-actions">
+					<button class="btn btn-sm btn-default trip-card-btn" data-action="detalhes" data-vehicle="${this.text(
+						vehicle.name
+					)}">${__("Ver Detalhes")}</button>
+					<button class="btn btn-sm btn-primary trip-card-btn" data-action="chegada" data-vehicle="${this.text(
+						vehicle.name
+					)}">${__("Registar Chegada")}</button>
+				</div>
 			`;
 		}
 
@@ -456,6 +464,15 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					label: __("Data de Carregamento"),
 					default: frappe.datetime.get_today(),
 				},
+				// Destinations get their own full-width section instead of sharing
+				// a column with the loading fields — a scrollable add/remove list
+				// reads as cramped when it's squeezed next to other inputs.
+				{
+					fieldname: "destinations_section",
+					fieldtype: "Section Break",
+					label: __("Destinos"),
+					depends_on: 'eval:doc.trip_type == "Serviço a Cliente"',
+				},
 				// Destinations get a hand-built add/remove list instead of a grid —
 				// a Table field's grid needs a `frm` for column context that a plain
 				// Dialog doesn't have, and a short dispatch-time destination list
@@ -463,7 +480,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				{
 					fieldname: "destinations_html",
 					fieldtype: "HTML",
-					depends_on: 'eval:doc.trip_type == "Serviço a Cliente"',
 				}
 			);
 		} else {
@@ -685,6 +701,105 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			},
 		});
 		dialog.show();
+	}
+
+	open_details_dialog(vehicle) {
+		if (!vehicle || !vehicle.open_trip) return;
+		const trip = vehicle.open_trip;
+		const isService = trip.trip_type === "Serviço a Cliente";
+		const title = [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || __("Sem identificação");
+
+		const facts = [];
+		facts.push([__("Condutor"), this.text(trip.driver_name || trip.driver || "—")]);
+		if (isService) {
+			facts.push([__("Cliente"), this.text(trip.customer_name || trip.customer || "—")]);
+			facts.push([__("Pedido de Serviço"), this.text(trip.service_reference || trip.service_order || "—")]);
+			facts.push([__("Local de Carregamento"), this.text(trip.loading_location || "—")]);
+			facts.push([__("Data de Carregamento"), this.date(trip.loading_date)]);
+		} else if (trip.route) {
+			facts.push([__("Rota"), this.text(trip.route)]);
+		}
+		facts.push([__("Odómetro Inicial"), `${this.text(trip.odometer_start)} km`]);
+		if (trip.cargo) facts.push([__("Carga"), this.text(trip.cargo)]);
+		if (vehicle.load_capacity) facts.push([__("Capacidade do Veículo"), `${this.text(vehicle.load_capacity)} t`]);
+
+		const factsHtml = facts
+			.map(
+				([label, value]) => `
+					<div class="ftb-detail-item">
+						<div class="ftb-detail-label">${label}</div>
+						<div class="ftb-detail-value">${value}</div>
+					</div>`
+			)
+			.join("");
+
+		const dialog = new frappe.ui.Dialog({
+			title: `${__("Detalhes da Viagem")} — ${vehicle.license_plate}`,
+			fields: [{ fieldname: "details_html", fieldtype: "HTML" }],
+		});
+
+		dialog.$wrapper.addClass("ftb-details-dialog");
+		dialog.fields_dict.details_html.$wrapper.html(`
+			<div class="ftb-detail-header">
+				<div>
+					<div class="ftb-detail-title">${this.text(title)}</div>
+					<div class="ftb-detail-sub">${this.text(vehicle.vehicle_type || "—")}</div>
+				</div>
+				${isService ? `<span class="trip-card-service-badge">${__("Serviço")}</span>` : ""}
+			</div>
+			${this.render_timeline(trip)}
+			<div class="ftb-detail-grid">${factsHtml}</div>
+		`);
+		dialog.show();
+	}
+
+	// A generalized version of the small on-card stepper: Saída is always
+	// reached (the trip exists), each destination lights up once delivered
+	// (teal on time, red if late), the first undelivered stop reads as the
+	// current leg, and Chegada waits at the end for everything else to close.
+	render_timeline(trip) {
+		const destinations = trip.destinations || [];
+		const nodes = [{ label: __("Saída"), sub: this.date(trip.departure_datetime), state: "done" }];
+
+		if (destinations.length) {
+			let activeAssigned = false;
+			destinations.forEach((d) => {
+				let state;
+				if (d.actual_delivery_date) {
+					state = d.status === "Atrasado" ? "late" : "done";
+				} else if (!activeAssigned) {
+					state = "active";
+					activeAssigned = true;
+				} else {
+					state = "pending";
+				}
+				nodes.push({ label: d.destination, sub: d.eta ? this.date(d.eta) : "", state });
+			});
+			nodes.push({
+				label: __("Chegada"),
+				sub: "",
+				state: destinations.every((d) => d.actual_delivery_date) ? "active" : "pending",
+			});
+		} else {
+			nodes.push({ label: __("Em Viagem"), sub: "", state: "active" });
+			nodes.push({ label: __("Chegada"), sub: "", state: "pending" });
+		}
+
+		const items = nodes
+			.map((n, i) => {
+				const node = `
+					<div class="ftb-tl-node ftb-tl-${n.state}">
+						<div class="ftb-tl-dot"></div>
+						<div class="ftb-tl-label">${this.text(n.label)}</div>
+						${n.sub ? `<div class="ftb-tl-sub">${this.text(n.sub)}</div>` : ""}
+					</div>`;
+				if (i === nodes.length - 1) return node;
+				const lineDone = nodes[i + 1].state !== "pending";
+				return `${node}<div class="ftb-tl-line ${lineDone ? "ftb-tl-line-done" : ""}"></div>`;
+			})
+			.join("");
+
+		return `<div class="ftb-timeline">${items}</div>`;
 	}
 
 	// ---- formatting ------------------------------------------------------

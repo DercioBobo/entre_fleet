@@ -331,6 +331,16 @@
 	align-self: flex-start;
 }
 
+.trip-card-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: auto;
+}
+
+.trip-card-actions .trip-card-btn {
+	margin-top: 0;
+}
+
 /* Destinations (client service trips) */
 .trip-card-destinations {
 	display: flex;
@@ -600,4 +610,167 @@
 	.ftb-dest-item {
 		animation: none;
 	}
+}
+
+/* Detalhes da Viagem dialog */
+.ftb-details-dialog {
+	--tb-navy-900: #0b2436;
+	--tb-navy-700: #123b52;
+	--tb-teal-500: #1c8c82;
+	--tb-amber-500: #e0a030;
+	--tb-gray-500: #8994a1;
+	--tb-gray-600: #5b6672;
+	--tb-gray-200: #e3e7ea;
+	--tb-red-500: #c4453a;
+}
+
+.ftb-details-dialog .modal-dialog {
+	max-width: 680px;
+}
+
+.ftb-detail-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 18px;
+}
+
+.ftb-detail-title {
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--tb-navy-900);
+}
+
+.ftb-detail-sub {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--tb-gray-500);
+	margin-top: 2px;
+}
+
+/* Timeline — same dot-and-line language as the on-card stepper and the
+   destination markers, just generalized to N stops with a scrollable rail. */
+.ftb-timeline {
+	display: flex;
+	align-items: flex-start;
+	overflow-x: auto;
+	padding: 4px 2px 20px;
+	margin-bottom: 8px;
+}
+
+.ftb-tl-node {
+	flex: 0 0 100px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 5px;
+}
+
+.ftb-tl-dot {
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: #fff;
+	border: 2px solid var(--tb-gray-200);
+	margin-top: 3px;
+}
+
+.ftb-tl-label {
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--tb-navy-900);
+	line-height: 1.25;
+	padding: 0 2px;
+}
+
+.ftb-tl-sub {
+	font-size: 10px;
+	color: var(--tb-gray-600);
+}
+
+.ftb-tl-line {
+	flex: 1 1 28px;
+	min-width: 20px;
+	height: 2px;
+	background: var(--tb-gray-200);
+	margin-top: 10px;
+}
+
+.ftb-tl-line-done {
+	background: var(--tb-teal-500);
+}
+
+.ftb-tl-done .ftb-tl-dot {
+	background: var(--tb-teal-500);
+	border-color: var(--tb-teal-500);
+}
+
+.ftb-tl-late .ftb-tl-dot {
+	background: var(--tb-red-500);
+	border-color: var(--tb-red-500);
+}
+
+.ftb-tl-late .ftb-tl-label {
+	color: var(--tb-red-500);
+}
+
+.ftb-tl-active .ftb-tl-dot {
+	background: var(--tb-amber-500);
+	border-color: var(--tb-amber-500);
+	animation: ftb-tl-pulse 1.6s ease-in-out infinite;
+}
+
+.ftb-tl-active .ftb-tl-label {
+	color: var(--tb-amber-500);
+}
+
+.ftb-tl-pending .ftb-tl-label,
+.ftb-tl-pending .ftb-tl-sub {
+	color: var(--tb-gray-500);
+}
+
+@keyframes ftb-tl-pulse {
+	0%, 100% {
+		box-shadow: 0 0 0 0 rgba(224, 160, 48, 0.5);
+	}
+	50% {
+		box-shadow: 0 0 0 5px rgba(224, 160, 48, 0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ftb-tl-active .ftb-tl-dot {
+		animation: none;
+	}
+}
+
+/* Fact grid */
+.ftb-detail-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 14px 20px;
+}
+
+.ftb-detail-item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.ftb-detail-label {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--tb-gray-500);
+}
+
+.ftb-detail-value {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--tb-navy-900);
 }

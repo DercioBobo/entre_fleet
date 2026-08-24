@@ -182,6 +182,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 	}
 
 	render(data) {
+		this.data = data;
 		this.$container.empty();
 		this.$container.append(this.render_back_link());
 		this.$container.append(this.render_hero(data.vehicle, data.documents, data.schedules[0] || null));
@@ -194,6 +195,10 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		this.$container.append(this.render_maintenance_section(data.maintenance_requests, data.job_cards));
 		this.$container.append(this.render_inspections_section(data.inspections));
 		this.$container.append(this.render_documents_section(data.documents));
+
+		this.$container.find("[data-action='detalhes']").on("click", (e) => {
+			this.open_trip_details_dialog($(e.currentTarget).attr("data-trip"));
+		});
 	}
 
 	render_back_link() {
@@ -475,11 +480,136 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 						r.service_conformity ? this.badge(r.service_conformity, STATUS_COLOR[r.service_conformity] || "gray") : "—",
 				},
 				{ label: __("Doc."), render: (r) => this.docstatus_badge(r.docstatus) },
+				{
+					label: "",
+					render: (r) =>
+						`<button type="button" class="btn btn-xs btn-default" data-action="detalhes" data-trip="${this.text(
+							r.name
+						)}">${__("Ver Detalhes")}</button>`,
+				},
 			],
 			trips,
 			__("Sem viagens registadas para este veículo.")
 		);
 		return this.render_section(__("Viagens"), body, trips.length);
+	}
+
+	open_trip_details_dialog(tripName) {
+		const trip = (this.data.trips || []).find((t) => t.name === tripName);
+		if (!trip) return;
+		const vehicle = this.data.vehicle || {};
+		const isService = trip.trip_type === "Serviço a Cliente";
+		const title = [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || __("Sem identificação");
+
+		const facts = [];
+		facts.push([__("Condutor"), this.text(trip.driver_name || trip.driver || "—")]);
+		if (isService) {
+			facts.push([__("Cliente"), this.text(trip.customer_name || trip.customer || "—")]);
+			facts.push([__("Pedido de Serviço"), this.text(trip.service_reference || trip.service_order || "—")]);
+			facts.push([__("Local de Carregamento"), this.text(trip.loading_location || "—")]);
+			facts.push([__("Data de Carregamento"), this.date(trip.loading_date)]);
+		} else if (trip.route) {
+			facts.push([__("Rota"), this.text(trip.route)]);
+		}
+		facts.push([
+			__("Odómetro"),
+			`${this.text(trip.odometer_start)} → ${this.text(trip.odometer_end || "—")} km`,
+		]);
+		if (trip.odometer_end && trip.odometer_end > trip.odometer_start) {
+			facts.push([__("Distância"), `${this.text(trip.odometer_end - trip.odometer_start)} km`]);
+		}
+		if (trip.cargo) facts.push([__("Carga"), this.text(trip.cargo)]);
+		if (vehicle.load_capacity) facts.push([__("Capacidade do Veículo"), `${this.text(vehicle.load_capacity)} t`]);
+		if (trip.estimated_fuel_used) {
+			facts.push([
+				__("Combustível Estimado"),
+				`${this.text(Math.round(trip.estimated_fuel_used * 100) / 100)} L (${this.currency(trip.estimated_fuel_cost)})`,
+			]);
+		}
+		if (trip.service_conformity) facts.push([__("Conformidade"), this.text(trip.service_conformity)]);
+
+		const factsHtml = facts
+			.map(
+				([label, value]) => `
+					<div class="efd-detail-item">
+						<div class="efd-detail-label">${label}</div>
+						<div class="efd-detail-value">${value}</div>
+					</div>`
+			)
+			.join("");
+
+		const dialog = new frappe.ui.Dialog({
+			title: `${__("Detalhes da Viagem")} — ${vehicle.license_plate || ""}`,
+			fields: [{ fieldname: "details_html", fieldtype: "HTML" }],
+		});
+
+		dialog.$wrapper.addClass("efd-details-dialog");
+		dialog.fields_dict.details_html.$wrapper.html(`
+			<div class="efd-detail-header">
+				<div>
+					<div class="efd-detail-title">${this.text(title)}</div>
+					<div class="efd-detail-sub">${this.text(vehicle.vehicle_type || "—")}</div>
+				</div>
+				${isService ? this.badge(__("Serviço"), "gray") : ""}
+			</div>
+			${this.render_trip_timeline(trip)}
+			<div class="efd-detail-grid">${factsHtml}</div>
+		`);
+		dialog.show();
+	}
+
+	// Same dot-and-line timeline as the Trip Board's "Ver Detalhes", but a
+	// closed trip's Chegada is definitively "done" (with its real date) —
+	// and a destination left undelivered on a closed trip reads as stalled
+	// (plain pending), not "active", since the trip isn't still moving.
+	render_trip_timeline(trip) {
+		const destinations = trip.destinations || [];
+		const arrived = !!trip.arrival_datetime;
+		const nodes = [{ label: __("Saída"), sub: this.date(trip.departure_datetime), state: "done" }];
+
+		if (destinations.length) {
+			let activeAssigned = false;
+			destinations.forEach((d) => {
+				let state;
+				if (d.actual_delivery_date) {
+					state = d.status === "Atrasado" ? "late" : "done";
+				} else if (!activeAssigned && !arrived) {
+					state = "active";
+					activeAssigned = true;
+				} else {
+					state = "pending";
+				}
+				nodes.push({ label: d.destination, sub: d.eta ? this.date(d.eta) : "", state });
+			});
+			nodes.push({
+				label: __("Chegada"),
+				sub: arrived ? this.date(trip.arrival_datetime) : "",
+				state: arrived ? "done" : destinations.every((d) => d.actual_delivery_date) ? "active" : "pending",
+			});
+		} else {
+			nodes.push({ label: __("Em Viagem"), sub: "", state: arrived ? "done" : "active" });
+			nodes.push({
+				label: __("Chegada"),
+				sub: arrived ? this.date(trip.arrival_datetime) : "",
+				state: arrived ? "done" : "pending",
+			});
+		}
+
+		const items = nodes
+			.map((n, i) => {
+				const node = `
+					<div class="efd-tl-node efd-tl-${n.state}">
+						<div class="efd-tl-dot"></div>
+						<div class="efd-tl-label">${this.text(n.label)}</div>
+						${n.sub ? `<div class="efd-tl-sub">${this.text(n.sub)}</div>` : ""}
+					</div>`;
+				if (i === nodes.length - 1) return node;
+				const lineDone = nodes[i + 1].state !== "pending";
+				return `${node}<div class="efd-tl-line ${lineDone ? "efd-tl-line-done" : ""}"></div>`;
+			})
+			.join("");
+
+		return `<div class="efd-timeline">${items}</div>`;
 	}
 
 	render_fuel_section(fuel_logs) {

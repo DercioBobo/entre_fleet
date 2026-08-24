@@ -573,3 +573,165 @@ table.dossier-table a:hover {
 	border-radius: 3px;
 	flex: 0 0 auto;
 }
+
+/* Detalhes da Viagem dialog */
+.efd-details-dialog {
+	--efd-navy-900: #0b2436;
+	--efd-navy-700: #123b52;
+	--efd-teal-500: #1c8c82;
+	--efd-amber-500: #e0a030;
+	--efd-gray-500: #8994a1;
+	--efd-gray-600: #5b6672;
+	--efd-gray-200: #e3e7ea;
+	--efd-red-500: #c4453a;
+}
+
+.efd-details-dialog .modal-dialog {
+	max-width: 680px;
+}
+
+.efd-detail-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 18px;
+}
+
+.efd-detail-title {
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--efd-navy-900);
+}
+
+.efd-detail-sub {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--efd-gray-500);
+	margin-top: 2px;
+}
+
+/* Timeline — same dot-and-line language as the Trip Board's "Ver Detalhes". */
+.efd-timeline {
+	display: flex;
+	align-items: flex-start;
+	overflow-x: auto;
+	padding: 4px 2px 20px;
+	margin-bottom: 8px;
+}
+
+.efd-tl-node {
+	flex: 0 0 100px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 5px;
+}
+
+.efd-tl-dot {
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: #fff;
+	border: 2px solid var(--efd-gray-200);
+	margin-top: 3px;
+}
+
+.efd-tl-label {
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--efd-navy-900);
+	line-height: 1.25;
+	padding: 0 2px;
+}
+
+.efd-tl-sub {
+	font-size: 10px;
+	color: var(--efd-gray-600);
+}
+
+.efd-tl-line {
+	flex: 1 1 28px;
+	min-width: 20px;
+	height: 2px;
+	background: var(--efd-gray-200);
+	margin-top: 10px;
+}
+
+.efd-tl-line-done {
+	background: var(--efd-teal-500);
+}
+
+.efd-tl-done .efd-tl-dot {
+	background: var(--efd-teal-500);
+	border-color: var(--efd-teal-500);
+}
+
+.efd-tl-late .efd-tl-dot {
+	background: var(--efd-red-500);
+	border-color: var(--efd-red-500);
+}
+
+.efd-tl-late .efd-tl-label {
+	color: var(--efd-red-500);
+}
+
+.efd-tl-active .efd-tl-dot {
+	background: var(--efd-amber-500);
+	border-color: var(--efd-amber-500);
+	animation: efd-tl-pulse 1.6s ease-in-out infinite;
+}
+
+.efd-tl-active .efd-tl-label {
+	color: var(--efd-amber-500);
+}
+
+.efd-tl-pending .efd-tl-label,
+.efd-tl-pending .efd-tl-sub {
+	color: var(--efd-gray-500);
+}
+
+@keyframes efd-tl-pulse {
+	0%, 100% {
+		box-shadow: 0 0 0 0 rgba(224, 160, 48, 0.5);
+	}
+	50% {
+		box-shadow: 0 0 0 5px rgba(224, 160, 48, 0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.efd-tl-active .efd-tl-dot {
+		animation: none;
+	}
+}
+
+/* Fact grid */
+.efd-detail-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 14px 20px;
+}
+
+.efd-detail-item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.efd-detail-label {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--efd-gray-500);
+}
+
+.efd-detail-value {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--efd-navy-900);
+}
