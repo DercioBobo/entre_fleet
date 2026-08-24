@@ -329,17 +329,17 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		if (!vehicle) return;
 
 		const canServeClient = this.requires_cargo(vehicle);
+		let tripType = "Serviço a Cliente";
+		let destinationRows = [];
+		let rowSeq = 0;
+
 		const fields = [];
 
 		if (canServeClient) {
-			fields.push({
-				fieldname: "trip_type",
-				fieldtype: "Select",
-				label: __("Tipo de Viagem"),
-				options: "Interno\nServiço a Cliente",
-				default: "Serviço a Cliente",
-				reqd: 1,
-			});
+			fields.push(
+				{ fieldname: "trip_type_html", fieldtype: "HTML" },
+				{ fieldname: "trip_type", fieldtype: "Data", hidden: 1, default: tripType }
+			);
 		}
 
 		fields.push(
@@ -350,6 +350,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				label: __("Condutor"),
 				reqd: 1,
 			},
+			{ fieldname: "col_top", fieldtype: "Column Break" },
 			{
 				fieldname: "departure_datetime",
 				fieldtype: "Datetime",
@@ -363,11 +364,18 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				label: __("Odómetro Inicial (km)"),
 				reqd: 1,
 				default: vehicle.current_odometer || 0,
-			}
+			},
+			{ fieldname: "col_mid", fieldtype: "Column Break" }
 		);
 
 		if (canServeClient) {
 			fields.push(
+				{
+					fieldname: "cargo",
+					fieldtype: "Data",
+					label: __("Carga"),
+					reqd: 1,
+				},
 				{
 					fieldname: "route",
 					fieldtype: "Data",
@@ -386,6 +394,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					options: "Fleet Service Order",
 					label: __("Pedido de Serviço"),
 				},
+				{ fieldname: "col_service", fieldtype: "Column Break" },
 				{
 					fieldname: "loading_location",
 					fieldtype: "Data",
@@ -397,30 +406,14 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					label: __("Data de Carregamento"),
 					default: frappe.datetime.get_today(),
 				},
+				// Destinations get a hand-built add/remove list instead of a grid —
+				// a Table field's grid needs a `frm` for column context that a plain
+				// Dialog doesn't have, and a short dispatch-time destination list
+				// doesn't need spreadsheet affordances anyway.
 				{
-					fieldname: "destinations",
-					fieldtype: "Table",
-					label: __("Destinos"),
-					options: "Fleet Trip Destination",
-					// A Table field in a plain (non-doc-bound) Dialog has no `frm` to pull
-					// child docfields from, so the grid needs them supplied directly here —
-					// options alone isn't enough and leaves grid.js's setup_fields() with
-					// undefined docfields to iterate.
-					fields: [
-						{
-							fieldname: "destination",
-							fieldtype: "Data",
-							label: __("Destino"),
-							in_list_view: 1,
-							reqd: 1,
-						},
-						{
-							fieldname: "eta",
-							fieldtype: "Date",
-							label: __("Previsão de Entrega"),
-							in_list_view: 1,
-						},
-					],
+					fieldname: "destinations_html",
+					fieldtype: "HTML",
+					depends_on: 'eval:doc.trip_type == "Serviço a Cliente"',
 				}
 			);
 		} else {
@@ -431,54 +424,119 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			});
 		}
 
-		if (canServeClient) {
-			fields.push({
-				fieldname: "cargo",
-				fieldtype: "Data",
-				label: __("Carga"),
-				reqd: 1,
+		const render_type_toggle = () => {
+			const $el = dialog.fields_dict.trip_type_html.$wrapper;
+			$el.html(`
+				<div class="ftb-type-label">${__("Tipo de Viagem")}</div>
+				<div class="ftb-type-toggle">
+					<button type="button" class="ftb-type-btn ${
+						tripType === "Interno" ? "active" : ""
+					}" data-value="Interno">${__("Interno")}</button>
+					<button type="button" class="ftb-type-btn ${
+						tripType === "Serviço a Cliente" ? "active" : ""
+					}" data-value="Serviço a Cliente">${__("Serviço a Cliente")}</button>
+				</div>
+			`);
+			$el.find(".ftb-type-btn").on("click", (e) => {
+				tripType = $(e.currentTarget).attr("data-value");
+				dialog.set_value("trip_type", tripType);
+				render_type_toggle();
 			});
-		}
-
-		const make_dialog = () => {
-			const dialog = new frappe.ui.Dialog({
-				title: `${__("Registar Saída")} — ${vehicle.license_plate}`,
-				fields,
-				primary_action_label: __("Confirmar Saída"),
-				primary_action: (values) => {
-					if (values.trip_type === "Serviço a Cliente") {
-						if (!values.service_order) {
-							frappe.msgprint(__("Indique o Pedido de Serviço."));
-							return;
-						}
-						if (!values.destinations || !values.destinations.length) {
-							frappe.msgprint(__("Adicione pelo menos um destino."));
-							return;
-						}
-					}
-					dialog.hide();
-					frappe.call({
-						method: "entre_fleet.entre_fleet.api.start_trip",
-						args: { vehicle: vehicle.name, ...values },
-						freeze: true,
-						freeze_message: __("A registar saída..."),
-					}).then(() => {
-						frappe.show_alert({ message: __("Saída registada."), indicator: "green" });
-						this.load_data();
-					});
-				},
-			});
-			dialog.show();
 		};
 
+		const render_destinations = () => {
+			const $el = dialog.fields_dict.destinations_html.$wrapper;
+			const rows = destinationRows
+				.map(
+					(row) => `
+						<div class="ftb-dest-item">
+							<span class="ftb-dest-dot"></span>
+							<span class="ftb-dest-name">${this.text(row.destination)}</span>
+							<span class="ftb-dest-eta">${row.eta ? this.date(row.eta) : ""}</span>
+							<button type="button" class="ftb-dest-remove" data-row="${row.id}">&times;</button>
+						</div>`
+				)
+				.join("");
+
+			$el.html(`
+				<div class="ftb-dest-label">${__("Destinos")}</div>
+				<div class="ftb-dest-add">
+					<input type="text" class="ftb-dest-input-name" placeholder="${__("Nome do destino")}" />
+					<input type="date" class="ftb-dest-input-eta" />
+					<button type="button" class="ftb-dest-add-btn">${__("Adicionar")}</button>
+				</div>
+				<div class="ftb-dest-list">
+					${rows || `<div class="ftb-dest-empty">${__("Ainda sem destinos adicionados.")}</div>`}
+				</div>
+			`);
+
+			const add_row = () => {
+				const $name = $el.find(".ftb-dest-input-name");
+				const $eta = $el.find(".ftb-dest-input-eta");
+				const destination = ($name.val() || "").trim();
+				if (!destination) {
+					$name.trigger("focus");
+					return;
+				}
+				destinationRows.push({ id: `row-${++rowSeq}`, destination, eta: $eta.val() || "" });
+				render_destinations();
+			};
+
+			$el.find(".ftb-dest-add-btn").on("click", add_row);
+			$el.find(".ftb-dest-input-name, .ftb-dest-input-eta").on("keydown", (e) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					add_row();
+				}
+			});
+			$el.find(".ftb-dest-remove").on("click", (e) => {
+				const id = $(e.currentTarget).attr("data-row");
+				destinationRows = destinationRows.filter((r) => r.id !== id);
+				render_destinations();
+			});
+		};
+
+		const dialog = new frappe.ui.Dialog({
+			title: `${__("Registar Saída")} — ${vehicle.license_plate}`,
+			fields,
+			primary_action_label: __("Confirmar Saída"),
+			primary_action: (values) => {
+				if (canServeClient && tripType === "Serviço a Cliente") {
+					if (!values.service_order) {
+						frappe.msgprint(__("Indique o Pedido de Serviço."));
+						return;
+					}
+					if (!destinationRows.length) {
+						frappe.msgprint(__("Adicione pelo menos um destino."));
+						return;
+					}
+				}
+				dialog.hide();
+				frappe.call({
+					method: "entre_fleet.entre_fleet.api.start_trip",
+					args: {
+						vehicle: vehicle.name,
+						...values,
+						trip_type: canServeClient ? tripType : undefined,
+						destinations: destinationRows.map((r) => ({ destination: r.destination, eta: r.eta })),
+					},
+					freeze: true,
+					freeze_message: __("A registar saída..."),
+				}).then(() => {
+					frappe.show_alert({ message: __("Saída registada."), indicator: "green" });
+					this.load_data();
+				});
+			},
+		});
+
+		dialog.$wrapper.addClass("ftb-saida-dialog");
+
 		if (canServeClient) {
-			// The "destinations" Table field's grid crashes if its child doctype's
-			// field metadata isn't cached client-side yet — preload it before the
-			// dialog (and its now-default-visible service section) renders.
-			frappe.model.with_doctype("Fleet Trip Destination", make_dialog);
-		} else {
-			make_dialog();
+			render_type_toggle();
+			render_destinations();
 		}
+
+		dialog.show();
 	}
 
 	open_entrega_dialog(vehicle, destinationRow) {
