@@ -402,6 +402,25 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					fieldtype: "Table",
 					label: __("Destinos"),
 					options: "Fleet Trip Destination",
+					// A Table field in a plain (non-doc-bound) Dialog has no `frm` to pull
+					// child docfields from, so the grid needs them supplied directly here —
+					// options alone isn't enough and leaves grid.js's setup_fields() with
+					// undefined docfields to iterate.
+					fields: [
+						{
+							fieldname: "destination",
+							fieldtype: "Data",
+							label: __("Destino"),
+							in_list_view: 1,
+							reqd: 1,
+						},
+						{
+							fieldname: "eta",
+							fieldtype: "Date",
+							label: __("Previsão de Entrega"),
+							in_list_view: 1,
+						},
+					],
 				}
 			);
 		} else {
