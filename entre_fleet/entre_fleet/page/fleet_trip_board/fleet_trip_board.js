@@ -257,12 +257,10 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 						isService
 							? `<div class="trip-card-detail"><strong>${__("Cliente")}:</strong> ${this.text(
 									trip.customer_name || trip.customer || "—"
-							  )}</div>
-							<div class="trip-card-detail"><strong>${__("Referência")}:</strong> ${this.text(trip.service_reference || "—")}</div>`
+							  )}</div>`
 							: ""
 					}
 					<div class="trip-card-detail"><strong>${__("Saída")}:</strong> ${this.date(trip.departure_datetime)}</div>
-					<div class="trip-card-detail"><strong>${__("Odómetro Inicial")}:</strong> ${this.text(trip.odometer_start)} km</div>
 					${!isService && trip.route ? `<div class="trip-card-detail"><strong>${__("Rota")}:</strong> ${this.text(trip.route)}</div>` : ""}
 					${trip.cargo ? `<div class="trip-card-detail"><strong>${__("Carga")}:</strong> ${this.text(trip.cargo)}</div>` : ""}
 					<div class="trip-card-elapsed" data-departure="${trip.departure_datetime}">—</div>
@@ -357,19 +355,15 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		if (!vehicle) return;
 
 		const canServeClient = this.requires_cargo(vehicle);
-		let tripType = "Serviço a Cliente";
+		// Interno is parked for now — every cargo-capable vehicle dispatch is
+		// treated as a client service trip. Kept as a named constant (rather
+		// than inlined) so reintroducing the toggle later is a small diff.
+		const tripType = "Serviço a Cliente";
 		let destinationRows = [];
 		let rowSeq = 0;
 		let editingRowId = null;
 
 		const fields = [];
-
-		if (canServeClient) {
-			fields.push(
-				{ fieldname: "trip_type_html", fieldtype: "HTML" },
-				{ fieldname: "trip_type", fieldtype: "Data", hidden: 1, default: tripType }
-			);
-		}
 
 		fields.push(
 			{
@@ -403,16 +397,9 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		if (canServeClient) {
 			fields.push(
 				{
-					fieldname: "route",
-					fieldtype: "Data",
-					label: __("Rota"),
-					depends_on: 'eval:doc.trip_type != "Serviço a Cliente"',
-				},
-				{
 					fieldname: "service_section",
 					fieldtype: "Section Break",
 					label: __("Serviço ao Cliente"),
-					depends_on: 'eval:doc.trip_type == "Serviço a Cliente"',
 				},
 				{
 					fieldname: "customer",
@@ -480,7 +467,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					fieldname: "destinations_section",
 					fieldtype: "Section Break",
 					label: __("Destinos"),
-					depends_on: 'eval:doc.trip_type == "Serviço a Cliente"',
 				},
 				// Destinations get a hand-built add/remove list instead of a grid —
 				// a Table field's grid needs a `frm` for column context that a plain
@@ -490,9 +476,8 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					fieldname: "destinations_html",
 					fieldtype: "HTML",
 				},
-				// Unconditional (no depends_on) so it closes out the Serviço-only
-				// section above and always renders — after Local de Carregamento
-				// for Serviço trips, right after Rota for Interno ones.
+				// Own section so it renders after Local de Carregamento / Destinos,
+				// not squeezed next to them.
 				{
 					fieldname: "cargo_section",
 					fieldtype: "Section Break",
@@ -514,26 +499,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				label: __("Rota"),
 			});
 		}
-
-		const render_type_toggle = () => {
-			const $el = dialog.fields_dict.trip_type_html.$wrapper;
-			$el.html(`
-				<div class="ftb-type-label">${__("Tipo de Viagem")}</div>
-				<div class="ftb-type-toggle">
-					<button type="button" class="ftb-type-btn ${
-						tripType === "Interno" ? "active" : ""
-					}" data-value="Interno">${__("Interno")}</button>
-					<button type="button" class="ftb-type-btn ${
-						tripType === "Serviço a Cliente" ? "active" : ""
-					}" data-value="Serviço a Cliente">${__("Serviço a Cliente")}</button>
-				</div>
-			`);
-			$el.find(".ftb-type-btn").on("click", (e) => {
-				tripType = $(e.currentTarget).attr("data-value");
-				dialog.set_value("trip_type", tripType);
-				render_type_toggle();
-			});
-		};
 
 		const render_destinations = () => {
 			const $el = dialog.fields_dict.destinations_html.$wrapper;
@@ -680,7 +645,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			fields,
 			primary_action_label: __("Confirmar Saída"),
 			primary_action: (values) => {
-				if (canServeClient && tripType === "Serviço a Cliente") {
+				if (canServeClient) {
 					if (!values.service_order) {
 						frappe.msgprint(__("Indique o Pedido de Serviço."));
 						return;
@@ -711,7 +676,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		dialog.$wrapper.addClass("ftb-saida-dialog");
 
 		if (canServeClient) {
-			render_type_toggle();
 			render_destinations();
 		}
 

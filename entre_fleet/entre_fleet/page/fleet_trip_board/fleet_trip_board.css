@@ -112,7 +112,7 @@
 
 .trip-board-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 	gap: 16px;
 }
 
@@ -440,47 +440,6 @@
 
 .ftb-saida-dialog .modal-dialog {
 	max-width: 640px;
-}
-
-.ftb-type-label,
-.ftb-dest-label {
-	font-size: 11px;
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.4px;
-	color: var(--tb-gray-500);
-	margin-bottom: 6px;
-}
-
-.ftb-type-toggle {
-	display: inline-flex;
-	background: var(--tb-sand-50);
-	border: 1px solid var(--tb-gray-200);
-	border-radius: 999px;
-	padding: 3px;
-	gap: 2px;
-	margin-bottom: 4px;
-}
-
-.ftb-type-btn {
-	border: none;
-	background: transparent;
-	cursor: pointer;
-	font-size: 12px;
-	font-weight: 600;
-	color: var(--tb-gray-600);
-	padding: 7px 16px;
-	border-radius: 999px;
-	transition: background 0.15s ease, color 0.15s ease;
-}
-
-.ftb-type-btn:hover {
-	color: var(--tb-navy-900);
-}
-
-.ftb-type-btn.active {
-	background: var(--tb-navy-700);
-	color: #fff;
 }
 
 .ftb-dest-add {
