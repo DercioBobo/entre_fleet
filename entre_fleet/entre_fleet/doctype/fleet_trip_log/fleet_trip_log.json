@@ -67,7 +67,7 @@
    "reqd": 1
   },
   {
-   "default": "Interno",
+   "default": "Serviço a Cliente",
    "depends_on": "eval:doc.vehicle_type != 'Administrativo'",
    "fieldname": "trip_type",
    "fieldtype": "Select",

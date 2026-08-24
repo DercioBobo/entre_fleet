@@ -337,7 +337,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				fieldtype: "Select",
 				label: __("Tipo de Viagem"),
 				options: "Interno\nServiço a Cliente",
-				default: "Interno",
+				default: "Serviço a Cliente",
 				reqd: 1,
 			});
 		}
