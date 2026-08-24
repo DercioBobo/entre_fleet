@@ -407,6 +407,14 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				const poll = setInterval(() => {
 					if (window.truck) {
 						clearInterval(poll);
+						// The export toolbar (Download OBJ+MTL / GLB) lives in the
+						// component's Shadow DOM with no `part` attribute, so it
+						// can't be reached with page CSS — hide it directly. This
+						// is end-user viewing, not a CAD round-trip tool.
+						const stageEl = document.querySelector("three-d-stage");
+						const toolbar =
+							stageEl && stageEl.shadowRoot && stageEl.shadowRoot.querySelector(".toolbar");
+						if (toolbar) toolbar.style.display = "none";
 						resolve(window.truck);
 					} else if (Date.now() - start > 15000) {
 						clearInterval(poll);
@@ -430,21 +438,53 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				// was loading — don't graft the model onto a stale section.
 				if (!this.$container.find(".efd-3d-slot").is($slot)) return;
 
-				$slot.find(".dossier-empty").remove();
+				$slot.empty();
 				this.$threeDMount.appendTo($slot).show();
+				$slot.append(this.render_truck_style_toggle());
 
-				truck.clear();
-				(vehicle.tyres || []).forEach((tyre) => {
-					const color = this.tyre_highlight_color(tyre.condition);
-					if (!color) return;
-					this.tyre_part_selectors(tyre).forEach((sel) => truck.highlight(sel, { color, tint: true }));
+				$slot.find(".efd-truck-style-btn").on("click", (e) => {
+					const style = $(e.currentTarget).attr("data-style");
+					$slot.find(".efd-truck-style-btn").removeClass("active");
+					$(e.currentTarget).addClass("active");
+					// setStyle() clears whatever highlights were active, so the
+					// condition colours need reapplying every time it's used.
+					truck.setStyle(style);
+					this.apply_tyre_highlights(truck, vehicle);
 				});
+
+				this.apply_tyre_highlights(truck, vehicle);
 			})
 			.catch((err) => {
 				console.error(err);
 				$slot.html(`<p class="dossier-empty">${__("Modelo 3D indisponível — a usar o esquema 2D.")}</p>`);
 				this.set_tyre_view("2d");
 			});
+	}
+
+	render_truck_style_toggle() {
+		const styles = [
+			["solid", __("Sólido")],
+			["blueprint", __("Blueprint")],
+			["ghost", __("Line Art")],
+		];
+		const buttons = styles
+			.map(
+				([value, label]) =>
+					`<button type="button" class="efd-truck-style-btn ${
+						value === "solid" ? "active" : ""
+					}" data-style="${value}">${label}</button>`
+			)
+			.join("");
+		return `<div class="efd-truck-style-toggle">${buttons}</div>`;
+	}
+
+	apply_tyre_highlights(truck, vehicle) {
+		truck.clear();
+		(vehicle.tyres || []).forEach((tyre) => {
+			const color = this.tyre_highlight_color(tyre.condition);
+			if (!color) return;
+			this.tyre_part_selectors(tyre).forEach((sel) => truck.highlight(sel, { color, tint: true }));
+		});
 	}
 
 	tyre_highlight_color(condition) {

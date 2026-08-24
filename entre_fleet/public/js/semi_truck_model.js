@@ -299,8 +299,11 @@ window.truck.setStyle = function (style) {
   if (stage._ground) stage._ground.visible = !bp && !gh;
   const bg = bp ? 0x0d2744 : gh ? 0xffffff : null;
   stage._scene.background = bg === null ? ORIG_BG : new THREE.Color(bg);
-  document.documentElement.style.background = bp ? '#0d2744' : gh ? '#ffffff' : '#efece6';
-  document.body.dataset.style = style;
+  // Deliberately NOT setting document.documentElement.style.background /
+  // document.body.dataset.style here (upstream viewer.html does, since the
+  // viewer is the whole page there) — this pack is embedded inside a larger
+  // app page, so style changes must stay scoped to the <three-d-stage>
+  // element's own scene background above, not repaint the host page.
   return this;
 };
 window.truck.style = () => styleNow;

@@ -502,6 +502,7 @@ table.dossier-table a:hover {
 }
 
 .efd-3d-slot {
+	position: relative;
 	width: 100%;
 	max-width: 640px;
 	height: 420px;
@@ -512,6 +513,41 @@ table.dossier-table a:hover {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+}
+
+.efd-truck-style-toggle {
+	position: absolute;
+	top: 12px;
+	left: 12px;
+	z-index: 2;
+	display: inline-flex;
+	background: rgba(255, 255, 255, 0.88);
+	border: 1px solid var(--efd-gray-200);
+	border-radius: 999px;
+	padding: 3px;
+	gap: 2px;
+	backdrop-filter: blur(2px);
+}
+
+.efd-truck-style-btn {
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--efd-gray-600);
+	padding: 5px 12px;
+	border-radius: 999px;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.efd-truck-style-btn:hover {
+	color: var(--efd-navy-900);
+}
+
+.efd-truck-style-btn.active {
+	background: var(--efd-navy-700);
+	color: #fff;
 }
 
 .efd-3d-mount,
