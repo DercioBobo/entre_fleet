@@ -11,24 +11,9 @@ class FleetTripLog(Document):
 		if self.odometer_end and self.odometer_end <= self.odometer_start:
 			frappe.throw(_("Odómetro Final deve ser maior que o Odómetro Inicial."))
 		self.check_single_open_trip()
-		self.validate_cargo()
 		self.validate_service_trip()
 		self.compute_service_conformity()
 		self.compute_fuel_estimate()
-
-	def validate_cargo(self):
-		"""Cargo is mandatory for every vehicle type except Administrativo —
-		enforced here (not just via mandatory_depends_on) so it also holds for
-		trips created straight from the Trip Board dialogs, which bypass the
-		standard form's client-side fetch_from."""
-		if not self.vehicle:
-			return
-
-		vehicle_type = frappe.db.get_value("Fleet Vehicle", self.vehicle, "vehicle_type")
-		if vehicle_type and vehicle_type != "Administrativo" and not self.cargo:
-			frappe.throw(
-				_("Indique a Carga transportada (obrigatório para viaturas do tipo {0}).").format(vehicle_type)
-			)
 
 	def validate_service_trip(self):
 		"""A service trip must be tied back to the client's order (one

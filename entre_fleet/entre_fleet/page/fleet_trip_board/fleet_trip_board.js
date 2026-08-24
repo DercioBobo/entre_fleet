@@ -385,15 +385,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		if (canServeClient) {
 			fields.push(
 				{
-					fieldname: "cargo",
-					fieldtype: "Data",
-					label: __("Carga"),
-					reqd: 1,
-					description: vehicle.load_capacity
-						? __("Capacidade do veículo: {0} toneladas", [vehicle.load_capacity])
-						: "",
-				},
-				{
 					fieldname: "route",
 					fieldtype: "Data",
 					label: __("Rota"),
@@ -480,6 +471,22 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				{
 					fieldname: "destinations_html",
 					fieldtype: "HTML",
+				},
+				// Unconditional (no depends_on) so it closes out the Serviço-only
+				// section above and always renders — after Local de Carregamento
+				// for Serviço trips, right after Rota for Interno ones.
+				{
+					fieldname: "cargo_section",
+					fieldtype: "Section Break",
+					label: __("Carga"),
+				},
+				{
+					fieldname: "cargo",
+					fieldtype: "Data",
+					label: __("Carga"),
+					description: vehicle.load_capacity
+						? __("Capacidade do veículo: {0} toneladas", [vehicle.load_capacity])
+						: "",
 				}
 			);
 		} else {

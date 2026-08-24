@@ -209,8 +209,7 @@
    "depends_on": "eval:doc.vehicle_type!='Administrativo'",
    "fieldname": "cargo",
    "fieldtype": "Data",
-   "label": "Carga",
-   "mandatory_depends_on": "eval:doc.vehicle_type!='Administrativo'"
+   "label": "Carga"
   }
  ],
  "index_web_pages_for_search": 1,
