@@ -12,9 +12,31 @@ frappe.ui.form.on("Fleet Trip Log", {
 
 		// Once an order is Concluída/Não Conforme it's done — keep it out of the
 		// picker for new dispatches, but a trip already linked to one keeps showing it.
-		frm.set_query("service_order", () => ({
-			filters: { status: ["in", ["Aberta", "Em Andamento"]] },
-		}));
+		// Cliente and Pedido de Serviço narrow each other: whichever is picked
+		// first, the other's picker is filtered down to just its matches.
+		frm.set_query("service_order", () => {
+			const filters = { status: ["in", ["Aberta", "Em Andamento"]] };
+			if (frm.doc.customer) filters.customer = frm.doc.customer;
+			return { filters };
+		});
+	},
+
+	customer(frm) {
+		if (!frm.doc.customer || !frm.doc.service_order) return;
+		frappe.db.get_value("Fleet Service Order", frm.doc.service_order, "customer").then((r) => {
+			if (r.message.customer && r.message.customer !== frm.doc.customer) {
+				// The order on file belongs to a different client — clear it
+				// rather than leave a trip whose order and customer disagree.
+				frm.set_value("service_order", "");
+			}
+		});
+	},
+
+	service_order(frm) {
+		if (!frm.doc.service_order) return;
+		frappe.db.get_value("Fleet Service Order", frm.doc.service_order, "customer").then((r) => {
+			if (r.message.customer) frm.set_value("customer", r.message.customer);
+		});
 	},
 
 	refresh(frm) {
@@ -35,10 +57,10 @@ function open_chegada_dialog(frm) {
 	const fields = [
 		{
 			fieldname: "arrival_datetime",
-			fieldtype: "Datetime",
-			label: __("Data/Hora de Chegada"),
+			fieldtype: "Date",
+			label: __("Data de Chegada"),
 			reqd: 1,
-			default: frappe.datetime.now_datetime(),
+			default: frappe.datetime.get_today(),
 		},
 		{
 			fieldname: "odometer_end",

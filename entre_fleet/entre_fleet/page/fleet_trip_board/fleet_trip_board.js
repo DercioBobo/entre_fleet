@@ -586,10 +586,10 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		const fields = [
 			{
 				fieldname: "arrival_datetime",
-				fieldtype: "Datetime",
-				label: __("Data/Hora de Chegada"),
+				fieldtype: "Date",
+				label: __("Data de Chegada"),
 				reqd: 1,
-				default: frappe.datetime.now_datetime(),
+				default: frappe.datetime.get_today(),
 			},
 			{
 				fieldname: "odometer_end",

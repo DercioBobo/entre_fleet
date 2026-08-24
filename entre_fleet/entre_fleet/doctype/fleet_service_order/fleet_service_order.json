@@ -11,6 +11,7 @@
   "column_break_top",
   "service_reference",
   "order_date",
+  "vehicles_requested",
   "section_break_status",
   "status",
   "column_break_status",
@@ -46,7 +47,14 @@
    "default": "Today",
    "fieldname": "order_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Data do Pedido"
+  },
+  {
+   "fieldname": "vehicles_requested",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Veículos Solicitados"
   },
   {
    "fieldname": "section_break_status",

@@ -203,7 +203,7 @@ def end_trip(trip_log, arrival_datetime, odometer_end, route=None, cargo=None):
 		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
 
 	trip = frappe.get_doc("Fleet Trip Log", trip_log)
-	trip.arrival_datetime = arrival_datetime
+	trip.arrival_datetime = frappe.utils.getdate(arrival_datetime)
 	trip.odometer_end = frappe.utils.flt(odometer_end)
 	if route:
 		trip.route = route

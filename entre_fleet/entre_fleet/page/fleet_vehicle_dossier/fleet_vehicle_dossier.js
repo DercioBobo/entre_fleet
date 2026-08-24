@@ -432,7 +432,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 		const body = this.render_table(
 			[
 				{ label: __("Saída"), render: (r) => this.date(r.departure_datetime) },
-				{ label: __("Chegada"), render: (r) => this.datetime(r.arrival_datetime) },
+				{ label: __("Chegada"), render: (r) => this.date(r.arrival_datetime) },
 				{ label: __("Condutor"), render: (r) => this.link("Fleet Driver", r.driver, r.driver_name) },
 				{ label: __("Odómetro"), render: (r) => `${this.text(r.odometer_start)} → ${this.text(r.odometer_end || "—")}` },
 				{
