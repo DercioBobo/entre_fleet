@@ -78,7 +78,6 @@ def get_trip_board():
 			"driver.driver_name as driver_name",
 			"departure_datetime",
 			"odometer_start",
-			"route",
 			"cargo",
 			"trip_type",
 			"service_order",
@@ -86,6 +85,8 @@ def get_trip_board():
 			"service_order.service_reference as service_reference",
 			"loading_location",
 			"loading_date",
+			"delay_reason",
+			"remarks",
 		],
 	)
 	attach_destinations(open_trips)
@@ -150,13 +151,14 @@ def start_trip(
 	driver,
 	odometer_start,
 	departure_datetime=None,
-	route=None,
 	cargo=None,
 	trip_type="Interno",
 	service_order=None,
 	customer=None,
 	loading_location=None,
 	loading_date=None,
+	delay_reason=None,
+	remarks=None,
 	destinations=None,
 ):
 	if not frappe.has_permission("Fleet Trip Log", "create"):
@@ -169,24 +171,24 @@ def start_trip(
 	trip.departure_datetime = frappe.utils.getdate(departure_datetime) if departure_datetime else frappe.utils.today()
 	trip.trip_type = trip_type or "Interno"
 	trip.cargo = cargo
+	trip.remarks = remarks
 
 	if trip.trip_type == "Serviço a Cliente":
 		trip.service_order = service_order
 		trip.customer = customer
 		trip.loading_location = loading_location
 		trip.loading_date = loading_date
+		trip.delay_reason = delay_reason
 		for row in frappe.parse_json(destinations) or []:
 			if row.get("destination"):
 				trip.append("destinations", {"destination": row.get("destination"), "eta": row.get("eta")})
-	else:
-		trip.route = route
 
 	trip.insert()
 	return trip.name
 
 
 @frappe.whitelist()
-def mark_trip_destination_delivered(trip_log, destination_row, actual_delivery_date=None):
+def mark_trip_destination_delivered(trip_log, destination_row, actual_delivery_date=None, remarks=None):
 	if not frappe.has_permission("Fleet Trip Log", "write", trip_log):
 		frappe.throw(_("Não tem permissão para actualizar esta viagem."), frappe.PermissionError)
 
@@ -196,12 +198,13 @@ def mark_trip_destination_delivered(trip_log, destination_row, actual_delivery_d
 		frappe.throw(_("Destino não encontrado nesta viagem."))
 
 	row.actual_delivery_date = actual_delivery_date or frappe.utils.today()
+	row.remarks = remarks
 	trip.save()
 	return trip.name
 
 
 @frappe.whitelist()
-def end_trip(trip_log, arrival_datetime, odometer_end, route=None, cargo=None):
+def end_trip(trip_log, arrival_datetime, odometer_end, cargo=None, remarks=None):
 	if not frappe.has_permission("Fleet Trip Log", "submit"):
 		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
 
@@ -221,10 +224,9 @@ def end_trip(trip_log, arrival_datetime, odometer_end, route=None, cargo=None):
 
 	trip.arrival_datetime = frappe.utils.getdate(arrival_datetime)
 	trip.odometer_end = frappe.utils.flt(odometer_end)
-	if route:
-		trip.route = route
 	if cargo:
 		trip.cargo = cargo
+	trip.remarks = remarks
 	trip.save()
 	trip.submit()
 	return trip.name
@@ -460,7 +462,9 @@ def get_vehicle_dossier(vehicle):
 			"service_order.order_date as order_date",
 			"loading_location",
 			"loading_date",
+			"delay_reason",
 			"service_conformity",
+			"remarks",
 		],
 		order_by="departure_datetime desc, `tabFleet Trip Log`.creation desc",
 		limit_page_length=HISTORY_LIMIT,

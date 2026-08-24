@@ -508,6 +508,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			facts.push([__("Pedido de Serviço"), this.text(trip.service_reference || trip.service_order || "—")]);
 			facts.push([__("Local de Carregamento"), this.text(trip.loading_location || "—")]);
 			facts.push([__("Data de Carregamento"), this.date(trip.loading_date)]);
+			if (trip.delay_reason) facts.push([__("Motivo do Atraso"), this.text(trip.delay_reason)]);
 		} else if (trip.route) {
 			facts.push([__("Rota"), this.text(trip.route)]);
 		}
@@ -527,6 +528,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			]);
 		}
 		if (trip.service_conformity) facts.push([__("Conformidade"), this.text(trip.service_conformity)]);
+		if (trip.remarks) facts.push([__("Observações"), this.text(trip.remarks)]);
 
 		const factsHtml = facts
 			.map(
@@ -585,6 +587,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 
 		$body.find(".efd-pending-btn").on("click", (e) => {
 			const destinationRow = $(e.currentTarget).attr("data-row");
+			const destination = (trip.destinations || []).find((d) => d.name === destinationRow);
 			frappe.prompt(
 				[
 					{
@@ -594,6 +597,12 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 						reqd: 1,
 						default: frappe.datetime.get_today(),
 					},
+					{
+						fieldname: "remarks",
+						fieldtype: "Small Text",
+						label: __("Observações"),
+						default: (destination && destination.remarks) || "",
+					},
 				],
 				(values) => {
 					frappe.call({
@@ -602,6 +611,7 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 							trip_log: trip.name,
 							destination_row: destinationRow,
 							actual_delivery_date: values.actual_delivery_date,
+							remarks: values.remarks,
 						},
 						freeze: true,
 						freeze_message: __("A registar entrega..."),

@@ -83,15 +83,6 @@ function open_chegada_dialog(frm) {
 		},
 	];
 
-	if (!isService) {
-		fields.push({
-			fieldname: "route",
-			fieldtype: "Data",
-			label: __("Rota"),
-			default: frm.doc.route,
-		});
-	}
-
 	if (needsCargo) {
 		fields.push({
 			fieldname: "cargo",
@@ -101,6 +92,13 @@ function open_chegada_dialog(frm) {
 			default: frm.doc.cargo,
 		});
 	}
+
+	fields.push({
+		fieldname: "remarks",
+		fieldtype: "Small Text",
+		label: __("Observações"),
+		default: frm.doc.remarks || "",
+	});
 
 	const dialog = new frappe.ui.Dialog({
 		title: __("Registar Chegada"),

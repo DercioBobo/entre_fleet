@@ -27,13 +27,16 @@
   "column_break_service",
   "service_order",
   "loading_date",
+  "delay_reason",
   "vehicle_load_capacity",
   "section_break_destinations",
   "destinations",
   "service_conformity",
   "section_break_route",
   "route",
-  "cargo"
+  "cargo",
+  "section_break_remarks",
+  "remarks"
  ],
  "fields": [
   {
@@ -168,6 +171,14 @@
    "label": "Data de Carregamento"
   },
   {
+   "depends_on": "eval:doc.loading_date && doc.departure_datetime > doc.loading_date",
+   "description": "A viatura saiu depois da Data de Carregamento prevista.",
+   "fieldname": "delay_reason",
+   "fieldtype": "Small Text",
+   "label": "Motivo do Atraso",
+   "mandatory_depends_on": "eval:doc.loading_date && doc.departure_datetime > doc.loading_date"
+  },
+  {
    "fetch_from": "vehicle.load_capacity",
    "fieldname": "vehicle_load_capacity",
    "fieldtype": "Float",
@@ -210,6 +221,16 @@
    "fieldname": "cargo",
    "fieldtype": "Data",
    "label": "Carga"
+  },
+  {
+   "fieldname": "section_break_remarks",
+   "fieldtype": "Section Break",
+   "label": "Observações"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "remarks",
+   "fieldtype": "Small Text"
   }
  ],
  "index_web_pages_for_search": 1,

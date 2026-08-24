@@ -261,7 +261,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 							: ""
 					}
 					<div class="trip-card-detail"><strong>${__("Saída")}:</strong> ${this.date(trip.departure_datetime)}</div>
-					${!isService && trip.route ? `<div class="trip-card-detail"><strong>${__("Rota")}:</strong> ${this.text(trip.route)}</div>` : ""}
 					${trip.cargo ? `<div class="trip-card-detail"><strong>${__("Carga")}:</strong> ${this.text(trip.cargo)}</div>` : ""}
 					<div class="trip-card-elapsed" data-departure="${trip.departure_datetime}">—</div>
 				</div>
@@ -460,6 +459,14 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					label: __("Data de Carregamento"),
 					default: frappe.datetime.get_today(),
 				},
+				{
+					fieldname: "delay_reason",
+					fieldtype: "Small Text",
+					label: __("Motivo do Atraso"),
+					description: __("A viatura saiu depois da Data de Carregamento prevista."),
+					depends_on: "eval:doc.loading_date && doc.departure_datetime > doc.loading_date",
+					mandatory_depends_on: "eval:doc.loading_date && doc.departure_datetime > doc.loading_date",
+				},
 				// Destinations get their own full-width section instead of sharing
 				// a column with the loading fields — a scrollable add/remove list
 				// reads as cramped when it's squeezed next to other inputs.
@@ -492,13 +499,14 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 						: "",
 				}
 			);
-		} else {
-			fields.push({
-				fieldname: "route",
-				fieldtype: "Data",
-				label: __("Rota"),
-			});
 		}
+
+		// Present on every step of a trip's lifecycle (Saída, Chegada, and each
+		// Registar Entrega), not just here — always optional, never gated.
+		fields.push(
+			{ fieldname: "remarks_section", fieldtype: "Section Break", label: __("Observações") },
+			{ fieldname: "remarks", fieldtype: "Small Text" }
+		);
 
 		const render_destinations = () => {
 			const $el = dialog.fields_dict.destinations_html.$wrapper;
@@ -697,6 +705,12 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 					default: frappe.datetime.get_today(),
 					description: destination && destination.eta ? __("Previsão: {0}", [this.date(destination.eta)]) : "",
 				},
+				{
+					fieldname: "remarks",
+					fieldtype: "Small Text",
+					label: __("Observações"),
+					default: (destination && destination.remarks) || "",
+				},
 			],
 			primary_action_label: __("Confirmar Entrega"),
 			primary_action: (values) => {
@@ -707,6 +721,7 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 						trip_log: vehicle.open_trip.name,
 						destination_row: destinationRow,
 						actual_delivery_date: values.actual_delivery_date,
+						remarks: values.remarks,
 					},
 					freeze: true,
 					freeze_message: __("A registar entrega..."),
@@ -750,12 +765,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				reqd: 1,
 				description: __("Odómetro inicial: {0} km", [trip.odometer_start]),
 			},
-			{
-				fieldname: "route",
-				fieldtype: "Data",
-				label: __("Rota"),
-				default: trip.route,
-			},
 		];
 
 		if (this.requires_cargo(vehicle)) {
@@ -767,6 +776,13 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				default: trip.cargo,
 			});
 		}
+
+		fields.push({
+			fieldname: "remarks",
+			fieldtype: "Small Text",
+			label: __("Observações"),
+			default: trip.remarks || "",
+		});
 
 		const dialog = new frappe.ui.Dialog({
 			title: `${__("Registar Chegada")} — ${vehicle.license_plate}`,
@@ -805,8 +821,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			facts.push([__("Pedido de Serviço"), this.text(trip.service_reference || trip.service_order || "—")]);
 			facts.push([__("Local de Carregamento"), this.text(trip.loading_location || "—")]);
 			facts.push([__("Data de Carregamento"), this.date(trip.loading_date)]);
-		} else if (trip.route) {
-			facts.push([__("Rota"), this.text(trip.route)]);
 		}
 		facts.push([__("Odómetro Inicial"), `${this.text(trip.odometer_start)} km`]);
 		if (trip.cargo) facts.push([__("Carga"), this.text(trip.cargo)]);
