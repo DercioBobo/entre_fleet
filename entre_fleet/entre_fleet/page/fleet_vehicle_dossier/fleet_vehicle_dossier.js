@@ -538,13 +538,39 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 			)
 			.join("");
 
+		// Recovery path for trips closed (or created) before the "Registar
+		// Chegada" guard existed — the Trip Board only ever shows this action
+		// on open trips, so a stop that slipped through with no entrega has
+		// nowhere else to be fixed once the trip is gone from the board.
+		const pendingDestinations = isService ? (trip.destinations || []).filter((d) => !d.actual_delivery_date) : [];
+		const pendingHtml = pendingDestinations.length
+			? `
+				<div class="efd-pending-block">
+					<div class="efd-detail-label">${__("Destinos por Entregar")}</div>
+					<div class="efd-pending-list">
+						${pendingDestinations
+							.map(
+								(d) => `
+									<div class="efd-pending-item">
+										<span class="efd-pending-name">${this.text(d.destination)}</span>
+										<button type="button" class="efd-pending-btn" data-row="${this.text(
+											d.name
+										)}">${__("Registar Entrega")}</button>
+									</div>`
+							)
+							.join("")}
+					</div>
+				</div>`
+			: "";
+
 		const dialog = new frappe.ui.Dialog({
 			title: `${__("Detalhes da Viagem")} — ${vehicle.license_plate || ""}`,
 			fields: [{ fieldname: "details_html", fieldtype: "HTML" }],
 		});
 
 		dialog.$wrapper.addClass("efd-details-dialog");
-		dialog.fields_dict.details_html.$wrapper.html(`
+		const $body = dialog.fields_dict.details_html.$wrapper;
+		$body.html(`
 			<div class="efd-detail-header">
 				<div>
 					<div class="efd-detail-title">${this.text(title)}</div>
@@ -553,8 +579,43 @@ entre_fleet.FleetVehicleDossier = class FleetVehicleDossier {
 				${isService ? this.badge(__("Serviço"), "gray") : ""}
 			</div>
 			${this.render_trip_timeline(trip)}
+			${pendingHtml}
 			<div class="efd-detail-grid">${factsHtml}</div>
 		`);
+
+		$body.find(".efd-pending-btn").on("click", (e) => {
+			const destinationRow = $(e.currentTarget).attr("data-row");
+			frappe.prompt(
+				[
+					{
+						fieldname: "actual_delivery_date",
+						fieldtype: "Date",
+						label: __("Data de Entrega"),
+						reqd: 1,
+						default: frappe.datetime.get_today(),
+					},
+				],
+				(values) => {
+					frappe.call({
+						method: "entre_fleet.entre_fleet.api.mark_trip_destination_delivered",
+						args: {
+							trip_log: trip.name,
+							destination_row: destinationRow,
+							actual_delivery_date: values.actual_delivery_date,
+						},
+						freeze: true,
+						freeze_message: __("A registar entrega..."),
+					}).then(() => {
+						frappe.show_alert({ message: __("Entrega registada."), indicator: "green" });
+						dialog.hide();
+						this.load_vehicle(this.current_vehicle);
+					});
+				},
+				__("Registar Entrega"),
+				__("Confirmar")
+			);
+		});
+
 		dialog.show();
 	}
 

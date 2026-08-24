@@ -759,6 +759,18 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 		if (!vehicle || !vehicle.open_trip) return;
 		const trip = vehicle.open_trip;
 
+		if (trip.trip_type === "Serviço a Cliente") {
+			const pending = (trip.destinations || []).filter((d) => !d.actual_delivery_date);
+			if (pending.length) {
+				frappe.msgprint(
+					__("Registe a Entrega de todos os destinos antes de concluir a viagem: {0}.", [
+						pending.map((d) => d.destination).join(", "),
+					])
+				);
+				return;
+			}
+		}
+
 		const fields = [
 			{
 				fieldname: "arrival_datetime",

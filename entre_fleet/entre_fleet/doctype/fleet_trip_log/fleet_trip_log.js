@@ -54,6 +54,18 @@ function open_chegada_dialog(frm) {
 	const isService = frm.doc.trip_type === "Serviço a Cliente";
 	const needsCargo = frm.doc.vehicle_type && frm.doc.vehicle_type !== "Administrativo";
 
+	if (isService) {
+		const pending = (frm.doc.destinations || []).filter((d) => !d.actual_delivery_date);
+		if (pending.length) {
+			frappe.msgprint(
+				__("Registe a Entrega de todos os destinos antes de concluir a viagem: {0}.", [
+					pending.map((d) => d.destination).join(", "),
+				])
+			);
+			return;
+		}
+	}
+
 	const fields = [
 		{
 			fieldname: "arrival_datetime",

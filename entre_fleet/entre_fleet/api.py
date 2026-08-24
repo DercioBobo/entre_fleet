@@ -206,6 +206,19 @@ def end_trip(trip_log, arrival_datetime, odometer_end, route=None, cargo=None):
 		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
 
 	trip = frappe.get_doc("Fleet Trip Log", trip_log)
+
+	# Checked before anything is mutated/saved — otherwise a doc.save() that
+	# succeeds followed by a doc.submit() that throws would leave the trip
+	# with arrival_datetime already persisted but docstatus still 0, which
+	# drops it out of "open trips" on the board without actually closing it.
+	pending = trip.get_pending_destinations()
+	if pending:
+		frappe.throw(
+			_("Registe a Entrega de todos os destinos antes de concluir a viagem: {0}.").format(
+				", ".join(pending)
+			)
+		)
+
 	trip.arrival_datetime = frappe.utils.getdate(arrival_datetime)
 	trip.odometer_end = frappe.utils.flt(odometer_end)
 	if route:

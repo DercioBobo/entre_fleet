@@ -735,3 +735,49 @@ table.dossier-table a:hover {
 	font-weight: 600;
 	color: var(--efd-navy-900);
 }
+
+.efd-pending-block {
+	margin-bottom: 18px;
+}
+
+.efd-pending-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-top: 6px;
+}
+
+.efd-pending-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	background: var(--efd-red-100, #fbe9e7);
+	border: 1px solid var(--efd-gray-200);
+	border-radius: 8px;
+	padding: 7px 12px;
+}
+
+.efd-pending-name {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--efd-navy-900);
+}
+
+.efd-pending-btn {
+	flex: 0 0 auto;
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--efd-teal-500);
+	background: transparent;
+	border: 1px solid var(--efd-teal-500);
+	border-radius: 999px;
+	padding: 3px 10px;
+	cursor: pointer;
+	transition: background 0.12s ease, color 0.12s ease;
+}
+
+.efd-pending-btn:hover {
+	background: var(--efd-teal-500);
+	color: #fff;
+}

@@ -27,6 +27,15 @@ class FleetTripLog(Document):
 		if not self.get("destinations"):
 			frappe.throw(_("Adicione pelo menos um destino para uma viagem do tipo Serviço a Cliente."))
 
+	def get_pending_destinations(self):
+		"""Destinations still missing a Data de Entrega — used to block
+		Registar Chegada until every stop has actually been delivered, so a
+		closed trip's conformity is never left ambiguous and the linked
+		Fleet Service Order isn't stuck at "Em Andamento" forever."""
+		if self.trip_type != "Serviço a Cliente":
+			return []
+		return [d.destination for d in self.get("destinations") or [] if not d.actual_delivery_date]
+
 	def compute_service_conformity(self):
 		"""Per-destination status (and the overall conformity) is derived
 		from eta vs actual_delivery_date, not hand-picked — mirrors what a
@@ -103,6 +112,14 @@ class FleetTripLog(Document):
 	def before_submit(self):
 		if not self.arrival_datetime or not self.odometer_end:
 			frappe.throw(_("Registe a Chegada (data/hora e odómetro final) antes de submeter a viagem."))
+
+		pending = self.get_pending_destinations()
+		if pending:
+			frappe.throw(
+				_("Registe a Entrega de todos os destinos antes de concluir a viagem: {0}.").format(
+					", ".join(pending)
+				)
+			)
 
 		vehicle_odometer = frappe.db.get_value("Fleet Vehicle", self.vehicle, "current_odometer")
 		if vehicle_odometer and self.odometer_start < vehicle_odometer:
