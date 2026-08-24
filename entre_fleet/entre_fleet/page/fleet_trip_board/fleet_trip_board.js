@@ -525,7 +525,6 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 				.join("");
 
 			$el.html(`
-				<div class="ftb-dest-label">${__("Destinos")}</div>
 				<div class="ftb-dest-add">
 					<input type="text" class="ftb-dest-input-name" placeholder="${__("Nome do destino")}" />
 					<input type="date" class="ftb-dest-input-eta" />
