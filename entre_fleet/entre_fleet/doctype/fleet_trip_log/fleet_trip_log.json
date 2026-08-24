@@ -198,12 +198,13 @@
    "options": "Fleet Trip Destination"
   },
   {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.trip_type == 'Serviço a Cliente'",
    "fieldname": "service_conformity",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Conformidade do Serviço",
-   "options": "\nConforme\nNão Conforme",
-   "read_only": 1
+   "options": "\nConforme\nNão Conforme"
   },
   {
    "fieldname": "section_break_route",

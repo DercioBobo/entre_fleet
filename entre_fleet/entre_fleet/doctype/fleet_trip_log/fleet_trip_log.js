@@ -82,6 +82,22 @@ function open_chegada_dialog(frm) {
 		},
 	];
 
+	if (isService) {
+		// Every destination is already delivered by the time Registar Chegada
+		// is reachable (see the guard above), so this is a real suggestion,
+		// not a guess — but it's still a manual call: an on-time delivery can
+		// still arrive damaged, for instance.
+		const anyLate = (frm.doc.destinations || []).some((d) => d.status === "Atrasado");
+		fields.push({
+			fieldname: "service_conformity",
+			fieldtype: "Select",
+			label: __("Conformidade do Serviço"),
+			options: "Conforme\nNão Conforme",
+			reqd: 1,
+			default: anyLate ? "Não Conforme" : "Conforme",
+		});
+	}
+
 	// Carga was already declared at Saída — no need to ask again on the way
 	// back in.
 	fields.push({

@@ -13,7 +13,7 @@ class FleetTripLog(Document):
 		self.check_single_open_trip()
 		self.validate_service_trip()
 		self.validate_destination_dates()
-		self.compute_service_conformity()
+		self.compute_destination_statuses()
 		self.compute_fuel_estimate()
 
 	def validate_destination_dates(self):
@@ -52,13 +52,15 @@ class FleetTripLog(Document):
 			return []
 		return [d.destination for d in self.get("destinations") or [] if not d.actual_delivery_date]
 
-	def compute_service_conformity(self):
-		"""Per-destination status (and the overall conformity) is derived
-		from eta vs actual_delivery_date, not hand-picked — mirrors what a
-		dispatcher used to type into the "Conformidade do Serviço" cell by
-		eye, now computed the same way every time."""
+	def compute_destination_statuses(self):
+		"""Per-destination status is derived from eta vs actual_delivery_date,
+		not hand-picked — mirrors what a dispatcher used to type into the
+		status cell by eye, now computed the same way every time. This is
+		just a per-stop timing signal though: the trip-level Conformidade do
+		Serviço is a manual call the closer makes on Registar Chegada (see
+		before_submit), not auto-derived from it — a truck can be exactly on
+		time and still have delivered damaged goods."""
 		if self.trip_type != "Serviço a Cliente" or not self.get("destinations"):
-			self.service_conformity = ""
 			return
 
 		for row in self.destinations:
@@ -67,14 +69,6 @@ class FleetTripLog(Document):
 				row.status = "No Prazo" if on_time else "Atrasado"
 			else:
 				row.status = "Pendente"
-
-		statuses = [row.status for row in self.destinations]
-		if any(s == "Atrasado" for s in statuses):
-			self.service_conformity = "Não Conforme"
-		elif all(s == "No Prazo" for s in statuses):
-			self.service_conformity = "Conforme"
-		else:
-			self.service_conformity = ""
 
 	def compute_fuel_estimate(self):
 		"""Replaces manual "Combustível Usado" entry: litres = distance /
@@ -136,6 +130,9 @@ class FleetTripLog(Document):
 					", ".join(pending)
 				)
 			)
+
+		if self.trip_type == "Serviço a Cliente" and not self.service_conformity:
+			frappe.throw(_("Indique a Conformidade do Serviço antes de concluir a viagem."))
 
 		vehicle_odometer = frappe.db.get_value("Fleet Vehicle", self.vehicle, "current_odometer")
 		if vehicle_odometer and self.odometer_start < vehicle_odometer:

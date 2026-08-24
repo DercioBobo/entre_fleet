@@ -204,7 +204,7 @@ def mark_trip_destination_delivered(trip_log, destination_row, actual_delivery_d
 
 
 @frappe.whitelist()
-def end_trip(trip_log, arrival_datetime, odometer_end, remarks=None):
+def end_trip(trip_log, arrival_datetime, odometer_end, remarks=None, service_conformity=None):
 	if not frappe.has_permission("Fleet Trip Log", "submit"):
 		frappe.throw(_("Não tem permissão para concluir viagens."), frappe.PermissionError)
 
@@ -225,6 +225,8 @@ def end_trip(trip_log, arrival_datetime, odometer_end, remarks=None):
 	trip.arrival_datetime = frappe.utils.getdate(arrival_datetime)
 	trip.odometer_end = frappe.utils.flt(odometer_end)
 	trip.remarks = remarks
+	if trip.trip_type == "Serviço a Cliente":
+		trip.service_conformity = service_conformity
 	trip.save()
 	trip.submit()
 	return trip.name
