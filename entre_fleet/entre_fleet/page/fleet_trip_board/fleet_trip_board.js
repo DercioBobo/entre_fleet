@@ -421,34 +421,45 @@ entre_fleet.FleetTripBoard = class FleetTripBoard {
 			});
 		}
 
-		const dialog = new frappe.ui.Dialog({
-			title: `${__("Registar Saída")} — ${vehicle.license_plate}`,
-			fields,
-			primary_action_label: __("Confirmar Saída"),
-			primary_action: (values) => {
-				if (values.trip_type === "Serviço a Cliente") {
-					if (!values.service_order) {
-						frappe.msgprint(__("Indique o Pedido de Serviço."));
-						return;
+		const make_dialog = () => {
+			const dialog = new frappe.ui.Dialog({
+				title: `${__("Registar Saída")} — ${vehicle.license_plate}`,
+				fields,
+				primary_action_label: __("Confirmar Saída"),
+				primary_action: (values) => {
+					if (values.trip_type === "Serviço a Cliente") {
+						if (!values.service_order) {
+							frappe.msgprint(__("Indique o Pedido de Serviço."));
+							return;
+						}
+						if (!values.destinations || !values.destinations.length) {
+							frappe.msgprint(__("Adicione pelo menos um destino."));
+							return;
+						}
 					}
-					if (!values.destinations || !values.destinations.length) {
-						frappe.msgprint(__("Adicione pelo menos um destino."));
-						return;
-					}
-				}
-				dialog.hide();
-				frappe.call({
-					method: "entre_fleet.entre_fleet.api.start_trip",
-					args: { vehicle: vehicle.name, ...values },
-					freeze: true,
-					freeze_message: __("A registar saída..."),
-				}).then(() => {
-					frappe.show_alert({ message: __("Saída registada."), indicator: "green" });
-					this.load_data();
-				});
-			},
-		});
-		dialog.show();
+					dialog.hide();
+					frappe.call({
+						method: "entre_fleet.entre_fleet.api.start_trip",
+						args: { vehicle: vehicle.name, ...values },
+						freeze: true,
+						freeze_message: __("A registar saída..."),
+					}).then(() => {
+						frappe.show_alert({ message: __("Saída registada."), indicator: "green" });
+						this.load_data();
+					});
+				},
+			});
+			dialog.show();
+		};
+
+		if (canServeClient) {
+			// The "destinations" Table field's grid crashes if its child doctype's
+			// field metadata isn't cached client-side yet — preload it before the
+			// dialog (and its now-default-visible service section) renders.
+			frappe.model.with_doctype("Fleet Trip Destination", make_dialog);
+		} else {
+			make_dialog();
+		}
 	}
 
 	open_entrega_dialog(vehicle, destinationRow) {

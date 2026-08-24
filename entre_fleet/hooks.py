@@ -14,8 +14,8 @@ required_apps = ["erpnext"]
 # Includes in <head>
 # ------------------
 
-app_include_css = "/assets/entre_fleet/css/entre_fleet.css"
-app_include_js = ["/assets/entre_fleet/js/entre_fleet.js"]
+app_include_css = "entre_fleet.bundle.css"
+app_include_js = "entre_fleet.bundle.js"
 
 # Scheduled Tasks
 # ---------------
